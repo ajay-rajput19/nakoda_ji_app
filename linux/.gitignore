@@ -1,0 +1,77 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code related
+.vscode/
+
+# Flutter/Dart/Pub related
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Generated plugin registrant
+flutter/generated_plugin_registrant.dart
+
+# Android related
+**/android/local.properties
+**/android/key.properties
+**/android/app/*.jks
+**/android/app/*.keystore
+
+# iOS related
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/App.framework/
+**/ios/Flutter/Flutter.framework/
+**/ios/Flutter/engine/
+**/ios/Flutter/Flutter.podspec
+
+# macOS
+**/macos/Flutter/ephemeral/
+**/macos/Pods/
+**/macos/.symlinks/
+
+# Windows
+**/windows/flutter/ephemeral/
+
+# Web
+**/web/.dart_tool/
+**/web/.flutter-plugins
+**/web/.flutter-plugins-dependencies
+
+# Linux
+**/linux/flutter/ephemeral/
+
+# Symbolication related
+app.*.symbols
+
+# Exceptions to above rules.
+!**/ios/**/default.mode1v3
+!**/ios/**/default.mode2v3
+!**/ios/**/default.pbxuser
+!**/ios/**/default.perspectivev3
+!**/ios/**/Runner/GeneratedPluginRegistrant.*
+
+# Firebase related (if using)
+**/google-services.json
+**/GoogleService-Info.plist
