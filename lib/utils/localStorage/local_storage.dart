@@ -45,7 +45,9 @@ class LocalStorage {
 
   static const String userAuthToken = 'userAuthToken';
 
-  static const String memberAuthToken = 'influencerAuthToken';
+  static const String memberAuthToken = 'memberAuthToken';
+
+  static const String userRole = 'userRole';
 
 
   // Initialize SharedPreferences safely and asynchronously

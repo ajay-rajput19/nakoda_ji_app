@@ -5,14 +5,37 @@ class SnackbarHelper {
   static void show(
     BuildContext context, {
     required String message,
-    Color backgroundColor = Colors.black87,
+    Color backgroundColor = const Color.fromARGB(221, 83, 226, 90),
     int duration = 3,
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message,style: TextStyle(fontSize: 16,fontWeight: FontWeight.w500,color: CustomColors.clrWhite),),
+        content: Text(
+          message,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: CustomColors.clrWhite,
+          ),
+        ),
         backgroundColor: backgroundColor,
         duration: Duration(seconds: duration),
+      ),
+    );
+  }
+
+  static void showError(BuildContext context, {required String message}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: CustomColors.clrWhite,
+          ),
+        ),
+        backgroundColor: CustomColors.clrRed,
       ),
     );
   }

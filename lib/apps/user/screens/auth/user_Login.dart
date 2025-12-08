@@ -21,9 +21,9 @@ class UserLogin extends StatefulWidget {
 class _UserLoginState extends State<UserLogin> {
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
-  
+
   bool _isPasswordVisible = false;
-  
+
   bool _isLoading = false;
 
   @override
@@ -34,51 +34,71 @@ class _UserLoginState extends State<UserLogin> {
 
   Future<void> _handleLogin() async {
     if (emailCtrl.text.isEmpty) {
-      SnackbarHelper.show(context, message: 'Email is required', backgroundColor: Colors.red);
+      SnackbarHelper.show(
+        context,
+        message: 'Email is required',
+        backgroundColor: Colors.red,
+      );
       return;
     }
-    
+
     if (passwordCtrl.text.isEmpty) {
-      SnackbarHelper.show(context, message: 'Password is required', backgroundColor: Colors.red);
+      SnackbarHelper.show(
+        context,
+        message: 'Password is required',
+        backgroundColor: Colors.red,
+      );
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       final result = await UserAuthController.handleLogin(
-        emailCtrl.text.trim(), 
-        passwordCtrl.text
+        emailCtrl.text.trim(),
+        passwordCtrl.text,
       );
-      
+
       setState(() {
         _isLoading = false;
       });
-      
+
       if (result['success'] == true) {
         String role = result['role'] ?? 'user';
-        
-        SnackbarHelper.show(context, message: 'Login successful!', backgroundColor: Colors.green);
-        
+
+        SnackbarHelper.show(
+          context,
+          message: 'Login successful!',
+          backgroundColor: Colors.green,
+        );
+
         Future.delayed(Duration(seconds: 1), () {
           if (mounted) {
             if (role.toLowerCase() == 'member') {
-              AppNavigation(context).pushReplacement(MemberChooseForm());
-            } else {
               AppNavigation(context).pushReplacement(MemberDashboard());
+            } else {
+              AppNavigation(context).pushReplacement(MemberChooseForm());
             }
           }
         });
       } else {
-        SnackbarHelper.show(context, message: result['message'], backgroundColor: Colors.red);
+        SnackbarHelper.show(
+          context,
+          message: result['message'],
+          backgroundColor: Colors.red,
+        );
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      SnackbarHelper.show(context, message: 'An error occurred during login', backgroundColor: Colors.red);
+      SnackbarHelper.show(
+        context,
+        message: 'An error occurred during login',
+        backgroundColor: Colors.red,
+      );
     }
   }
 

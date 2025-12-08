@@ -22,7 +22,7 @@ class _MemberRegisterPageState extends State<MemberRegisterPage> {
     });
   }
 
-  // Method to go to the next step
+  
   void nextStep() {
     setState(() {
       _currentStep++;

@@ -103,7 +103,11 @@ class UserAuthController {
             
             if (token != null && token is String) {
               SharedPreferences prefs = await SharedPreferences.getInstance();
+              print('token: $token');
               await prefs.setString('userAuthToken', token);
+              if (role != null) {
+                await prefs.setString('userRole', role);
+              }
             }
           }
           
