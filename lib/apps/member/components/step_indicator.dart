@@ -8,7 +8,7 @@ class FixedStepIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final steps = ["Personal Information", "Upload Documents", "Payment"];
+    final steps = ["Personal Information", "Upload Documents", "Review"];
 
     return Row(
       children: List.generate(steps.length, (index) {

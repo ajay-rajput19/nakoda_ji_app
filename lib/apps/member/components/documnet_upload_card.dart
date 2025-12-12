@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:nakoda_ji/data/static/color_export.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 class DocumentUploadCard extends StatefulWidget {
   final String title;
@@ -22,6 +24,7 @@ class DocumentUploadCard extends StatefulWidget {
 
 class _DocumentUploadCardState extends State<DocumentUploadCard> {
   File? selectedFile;
+  bool isUploaded = false;
 
   Future<void> pickFile() async {
     final result = await FilePicker.platform.pickFiles(
@@ -32,8 +35,19 @@ class _DocumentUploadCardState extends State<DocumentUploadCard> {
     if (result != null) {
       setState(() {
         selectedFile = File(result.files.single.path!);
+        isUploaded = false; // Reset upload status when new file is selected
       });
+      // Don't call onFileSelected here, only when user explicitly clicks upload
+    }
+  }
+
+  // Function to upload the selected file
+  void uploadFile() {
+    if (selectedFile != null) {
       widget.onFileSelected(selectedFile);
+      setState(() {
+        isUploaded = true;
+      });
     }
   }
 
@@ -41,8 +55,83 @@ class _DocumentUploadCardState extends State<DocumentUploadCard> {
   void clearFile() {
     setState(() {
       selectedFile = null;
+      isUploaded = false;
     });
     widget.onFileSelected(null);
+  }
+
+  // Function to preview the selected file
+  void previewFile() {
+    if (selectedFile != null) {
+      // For images, show in a dialog
+      if (selectedFile!.path.toLowerCase().endsWith('.jpg') ||
+          selectedFile!.path.toLowerCase().endsWith('.jpeg') ||
+          selectedFile!.path.toLowerCase().endsWith('.png')) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return Dialog(
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  // mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppBar(
+                      title: Text(widget.title),
+                      backgroundColor: CustomColors.clrBtnBg,
+                      foregroundColor: Colors.white,
+                      actions: [
+                        IconButton(
+                          icon: Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    Expanded(
+                      child: InteractiveViewer(
+                        child: Image.file(selectedFile!, fit: BoxFit.contain),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      }
+      // For PDF files, show PDF preview
+      else if (selectedFile!.path.toLowerCase().endsWith('.pdf')) {
+        try {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return Scaffold(
+                appBar: AppBar(
+                  title: Text(widget.title),
+                  backgroundColor: CustomColors.clrBtnBg,
+                  foregroundColor: Colors.white,
+                  actions: [
+                    IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                body: SfPdfViewer.file(selectedFile!),
+              );
+            },
+          );
+        } catch (e) {
+          // Fallback if PDF viewer fails
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Unable to preview PDF. Please upload the file."),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -52,7 +141,7 @@ class _DocumentUploadCardState extends State<DocumentUploadCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
+        border: Border.all(color: CustomColors.clrborder, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,7 +161,11 @@ class _DocumentUploadCardState extends State<DocumentUploadCard> {
               if (widget.isRequired)
                 const Text(
                   "Required",
-                  style: TextStyle(color: Colors.red, fontSize: 14),
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
             ],
           ),
@@ -87,135 +180,188 @@ class _DocumentUploadCardState extends State<DocumentUploadCard> {
           const SizedBox(height: 15),
 
           /// Upload Box
-          GestureDetector(
-            onTap: selectedFile == null ? pickFile : null,
-            child: Container(
-              height: 250,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.grey.shade300,
-                  width: 1.5,
-                  style: BorderStyle.solid,
-                ),
-                borderRadius: BorderRadius.circular(12),
+          Container(
+            height: 250,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Colors.grey.shade300,
+                width: 1.5,
+                style: BorderStyle.solid,
               ),
-              child: selectedFile == null
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.cloud_upload,
-                          size: 40,
-                          color: Colors.grey.shade500,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: selectedFile == null
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.cloud_upload,
+                        size: 40,
+                        color: Colors.grey.shade500,
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        "Drag and drop your file here",
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500,
                         ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          "Drag and drop your file here",
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      ),
+                      const Text(
+                        "or click to browse files",
+                        style: TextStyle(fontSize: 13, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton.icon(
+                        onPressed: pickFile,
+                        icon: Icon(Icons.folder_open),
+                        label: Text("Choose File"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: CustomColors.clrBtnBg,
+                          foregroundColor: Colors.white,
                         ),
-                        const Text(
-                          "or click to browse files",
-                          style: TextStyle(fontSize: 13, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.blue,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            "Choose File",
-                            style: TextStyle(color: Colors.white, fontSize: 14),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Stack(
-                      children: [
-                        // Preview of selected file
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Check if it's an image file
-                            if (selectedFile!.path.toLowerCase().endsWith(
-                                  '.jpg',
-                                ) ||
-                                selectedFile!.path.toLowerCase().endsWith(
-                                  '.jpeg',
-                                ) ||
-                                selectedFile!.path.toLowerCase().endsWith(
-                                  '.png',
-                                ))
-                              Container(
-                                height: 200,
-
-                                margin: EdgeInsets.all(8),
-
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(6),
-                                  image: DecorationImage(
-                                    image: FileImage(selectedFile!),
-                                    fit: BoxFit.cover,
+                      ),
+                    ],
+                  )
+                : Stack(
+                    children: [
+                      // Preview of selected file
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Check if it's an image file
+                          if (selectedFile!.path.toLowerCase().endsWith(
+                                '.jpg',
+                              ) ||
+                              selectedFile!.path.toLowerCase().endsWith(
+                                '.jpeg',
+                              ) ||
+                              selectedFile!.path.toLowerCase().endsWith('.png'))
+                            Container(
+                              height: 150,
+                              margin: EdgeInsets.all(8),
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(6),
+                                image: DecorationImage(
+                                  image: FileImage(selectedFile!),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            )
+                          else
+                            // For PDF or other file types
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.picture_as_pdf,
+                                  size: 40,
+                                  color: Colors.red.shade300,
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  selectedFile!.path.split('/').last,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: CustomColors.clrBlack,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  "${(selectedFile!.lengthSync() / 1024).toStringAsFixed(1)} KB",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: CustomColors.clrHeading,
                                   ),
                                 ),
-                              )
-                            else
-                              // For PDF or other file types
-                              Column(
+                              ],
+                            ),
+                          // Action buttons
+                          if (selectedFile != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 10),
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
-                                    Icons.picture_as_pdf,
-                                    size: 40,
-                                    color: Colors.red.shade300,
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    selectedFile!.path.split('/').last,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
+                                  ElevatedButton.icon(
+                                    onPressed: previewFile,
+                                    icon: Icon(Icons.visibility),
+                                    label: Text("Preview"),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: CustomColors.clrBtnBg,
+                                      foregroundColor: Colors.white,
                                     ),
-                                    textAlign: TextAlign.center,
+                                  ),
+                                  SizedBox(width: 10),
+                                  ElevatedButton.icon(
+                                    onPressed: isUploaded ? null : uploadFile,
+                                    icon: Icon(
+                                      isUploaded ? Icons.check : Icons.upload,
+                                      color: Colors.white,
+                                    ),
+                                    label: Text(
+                                      isUploaded ? "Uploaded" : "Upload",
+                                      style: TextStyle(
+                                        color: CustomColors.clrWhite,
+                                      ),
+                                    ),
+                                    style: ButtonStyle(
+                                      backgroundColor:
+                                          WidgetStateProperty.resolveWith<
+                                            Color
+                                          >((Set<WidgetState> states) {
+                                            return CustomColors.clrBtnBg;
+                                          }),
+                                      foregroundColor:
+                                          WidgetStateProperty.resolveWith<
+                                            Color
+                                          >((Set<WidgetState> states) {
+                                            return Colors.white;
+                                          }),
+                                    ),
                                   ),
                                 ],
                               ),
-                          ],
-                        ),
-                        // Cancel button in top right corner
-                        Positioned(
-                          top: 1,
-                          right: 1,
-                          child: GestureDetector(
-                            onTap: clearFile,
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              padding: const EdgeInsets.all(4),
-                              child: const Icon(
-                                Icons.close,
-                                size: 20,
-                                color: Colors.white,
-                              ),
+                            ),
+                        ],
+                      ),
+                      // Cancel button in top right corner
+                      Positioned(
+                        top: 1,
+                        right: 1,
+                        child: GestureDetector(
+                          onTap: clearFile,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: const Icon(
+                              Icons.close,
+                              size: 20,
+                              color: Colors.white,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-            ),
+                      ),
+                      // Upload status indicator
+                    ],
+                  ),
           ),
+          if (isUploaded)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                "✓ File uploaded successfully",
+                style: TextStyle(color: Colors.green, fontSize: 14),
+              ),
+            ),
         ],
       ),
     );

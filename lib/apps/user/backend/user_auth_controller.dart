@@ -7,7 +7,6 @@ import 'package:nakoda_ji/backend/urls.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserAuthController {
-
   static Future<String> handleRegister(UserModel user) async {
     try {
       final response = await http.post(
@@ -24,10 +23,11 @@ class UserAuthController {
         if (res.isSuccess()) {
           if (res.data != null && res.data is Map<String, dynamic>) {
             final data = res.data;
-            final token = data['token'] ?? 
-                         (data['user'] is Map ? data['user']['token'] : null) ??
-                         (data['auth'] is Map ? data['auth']['token'] : null);
-            
+            final token =
+                data['token'] ??
+                (data['user'] is Map ? data['user']['token'] : null) ??
+                (data['auth'] is Map ? data['auth']['token'] : null);
+
             if (token != null && token is String) {
               SharedPreferences prefs = await SharedPreferences.getInstance();
               await prefs.setString('userAuthToken', token);
@@ -39,8 +39,9 @@ class UserAuthController {
             return BackendResponse.successMsg;
           }
         } else {
-          if (res.message.contains('email') && 
-              (res.message.contains('exist') || res.message.contains('already'))) {
+          if (res.message.contains('email') &&
+              (res.message.contains('exist') ||
+                  res.message.contains('already'))) {
             return 'Email already exists. Please use a different email.';
           }
           return res.errorDetail('Failed to register! Please try again');
@@ -56,16 +57,19 @@ class UserAuthController {
     }
   }
 
-  static Future<Map<String, dynamic>> handleLogin(String email, String password) async {
+  static Future<Map<String, dynamic>> handleLogin(
+    String email,
+    String password,
+  ) async {
     try {
       if (email.isEmpty) {
         return {'success': false, 'message': 'Email is required'};
       }
-      
+
       if (password.isEmpty) {
         return {'success': false, 'message': 'Password is required'};
       }
-      
+
       final response = await http.post(
         Uri.parse(Urls.userLogin),
         headers: {'Content-Type': 'application/json'},
@@ -80,14 +84,15 @@ class UserAuthController {
         if (res.isSuccess()) {
           String? role;
           String? token;
-          
+
           if (res.data != null && res.data is Map<String, dynamic>) {
             final data = res.data;
-            
-            token = data['token'] ?? 
-                   (data['user'] is Map ? data['user']['token'] : null) ??
-                   (data['auth'] is Map ? data['auth']['token'] : null);
-            
+
+            token =
+                data['token'] ??
+                (data['user'] is Map ? data['user']['token'] : null) ??
+                (data['auth'] is Map ? data['auth']['token'] : null);
+
             if (data['user'] is Map) {
               final user = data['user'];
               if (user['roles'] is List && user['roles'].isNotEmpty) {
@@ -100,8 +105,8 @@ class UserAuthController {
             } else if (data['role'] is String) {
               role = data['role'];
             }
-            
-            if (token != null && token is String) {
+
+            if (token != null) {
               SharedPreferences prefs = await SharedPreferences.getInstance();
               print('token: $token');
               await prefs.setString('userAuthToken', token);
@@ -110,33 +115,32 @@ class UserAuthController {
               }
             }
           }
-          
+
           return {
-            'success': true, 
+            'success': true,
             'message': 'success',
-            'role': role ?? 'user'
+            'role': role ?? 'user',
           };
         } else {
           return {
-            'success': false, 
-            'message': res.errorDetail('Invalid credentials. Please try again.')
+            'success': false,
+            'message': res.errorDetail(
+              'Invalid credentials. Please try again.',
+            ),
           };
         }
       } else if (response.statusCode == 401) {
         return {
-          'success': false, 
-          'message': 'Invalid email or password. Please try again.'
+          'success': false,
+          'message': 'Invalid email or password. Please try again.',
         };
       } else {
-        return {
-          'success': false, 
-          'message': 'Login failed. Please try again.'
-        };
+        return {'success': false, 'message': 'Login failed. Please try again.'};
       }
     } catch (e) {
       return {
-        'success': false, 
-        'message': 'An error occurred during login. Please try again.'
+        'success': false,
+        'message': 'An error occurred during login. Please try again.',
       };
     }
   }
@@ -146,11 +150,11 @@ class UserAuthController {
       if (otp.isEmpty) {
         return 'OTP is required';
       }
-      
+
       if (email.isEmpty) {
         return 'Email is required';
       }
-      
+
       final response = await http.post(
         Uri.parse(Urls.userVerifyOtp),
         headers: {'Content-Type': 'application/json'},
@@ -173,8 +177,7 @@ class UserAuthController {
           if (errorResponse['message'] != null) {
             return errorResponse['message'];
           }
-        } catch (e) {
-        }
+        } catch (e) {}
         return 'Invalid OTP. Please try again.';
       } else {
         return 'error';
@@ -189,7 +192,7 @@ class UserAuthController {
       if (email.isEmpty) {
         return 'Email is required';
       }
-      
+
       final response = await http.post(
         Uri.parse(Urls.userResendOtp),
         headers: {'Content-Type': 'application/json'},
@@ -212,8 +215,7 @@ class UserAuthController {
           if (errorResponse['message'] != null) {
             return errorResponse['message'];
           }
-        } catch (e) {
-        }
+        } catch (e) {}
         return 'Failed to resend OTP. Please try again.';
       }
       return 'error';
@@ -227,11 +229,11 @@ class UserAuthController {
       if (email.isEmpty) {
         return 'Email is required';
       }
-      
+
       if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
         return 'Please enter a valid email address';
       }
-      
+
       final response = await http.post(
         Uri.parse(Urls.userForgotPassword),
         headers: {'Content-Type': 'application/json'},
@@ -246,7 +248,9 @@ class UserAuthController {
         if (res.isSuccess()) {
           return 'success';
         } else {
-          return res.errorDetail('Failed to process forgot password request. Please try again.');
+          return res.errorDetail(
+            'Failed to process forgot password request. Please try again.',
+          );
         }
       } else if (response.statusCode == 404) {
         return 'No account found with this email address';
@@ -258,16 +262,19 @@ class UserAuthController {
     }
   }
 
-  static Future<String> handleForgotPasswordOtpVerify(String email, String otp) async {
+  static Future<String> handleForgotPasswordOtpVerify(
+    String email,
+    String otp,
+  ) async {
     try {
       if (otp.isEmpty) {
         return 'OTP is required';
       }
-      
+
       if (email.isEmpty) {
         return 'Email is required';
       }
-      
+
       final response = await http.post(
         Uri.parse(Urls.userForgotPasswordVerifyOtp),
         headers: {'Content-Type': 'application/json'},
@@ -290,8 +297,7 @@ class UserAuthController {
           if (errorResponse['message'] != null) {
             return errorResponse['message'];
           }
-        } catch (e) {
-        }
+        } catch (e) {}
         return 'Invalid OTP. Please try again.';
       } else {
         return 'error';
@@ -301,35 +307,35 @@ class UserAuthController {
     }
   }
 
-  static Future<String> handleCreatePassword(String token, String password) async {
+  static Future<String> handleCreatePassword(
+    String token,
+    String password,
+  ) async {
     try {
       if (token.isEmpty) {
         return 'Reset token is required';
       }
-      
+
       if (password.isEmpty) {
         return 'Password is required';
       }
-      
+
       if (password.length < 8) {
         return 'Password must be at least 8 characters long';
       }
-      
+
       if (!password.contains(RegExp(r'[A-Z]'))) {
         return 'Password must contain at least one uppercase letter';
       }
-      
+
       if (!password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) {
         return 'Password must contain at least one special character';
       }
-      
+
       final response = await http.post(
         Uri.parse(Urls.userCreatePassword),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'token': token,
-          'password': password
-        }),
+        body: json.encode({'token': token, 'password': password}),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -340,7 +346,9 @@ class UserAuthController {
         if (res.isSuccess()) {
           return 'success';
         } else {
-          return res.errorDetail('Failed to create password. Please try again.');
+          return res.errorDetail(
+            'Failed to create password. Please try again.',
+          );
         }
       } else if (response.statusCode == 400) {
         try {
@@ -348,8 +356,7 @@ class UserAuthController {
           if (errorResponse['message'] != null) {
             return errorResponse['message'];
           }
-        } catch (e) {
-        }
+        } catch (e) {}
         return 'Failed to create password. Please try again.';
       } else if (response.statusCode == 404) {
         return 'Invalid reset token';

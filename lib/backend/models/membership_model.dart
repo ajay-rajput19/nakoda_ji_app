@@ -53,70 +53,116 @@ class MembershipModel {
 
   factory MembershipModel.fromJson(Map<String, dynamic> json) {
     return MembershipModel(
-      id: json['id'] ?? '',
-      applicantName: json['applicantName'] ?? '',
-      email: json['email'] ?? '',
-      profileImage: json['profileImage'],
-      aadhaarNumber: json['aadhaarNumber'] ?? '',
-      familyId: json['familyId'] ?? '',
-      constituency: json['constituency'] ?? '',
+      id: json['id']?.toString() ?? '',
+      
+      applicantName: json['applicantName'] ??
+          json['fullName'] ??
+          json['name'] ??
+          '',
+      
+      email: json['email'] ??
+          json['emailId'] ??
+          '',
+      
+      profileImage: json['profileImage'] ??
+          json['photo'],
+      
+      aadhaarNumber: json['aadhaarNumber'] ??
+          json['aadhar_no'] ??
+          json['aadhar'] ??
+          '',
+      
+      familyId: json['familyId'] ??
+          json['janAadhaarFamilyId'] ??
+          json['janAadharId'] ??
+          '',
+      
+      constituency: json['constituency'] ??
+          json['vidhansabha'] ??
+          '',
+      
       status: json['status'] ?? 'Draft',
-      submittedAt: json['submittedAt'] ?? '',
+      
+      submittedAt: json['submittedAt'] ??
+          json['createdAt'] ??
+          '',
+      
       gender: json['gender'],
-      dob: json['dob'],
-      phone: json['phone'],
+      dob: json['dob'] ??
+          json['dateOfBirth'],
+      
+      phone: json['phone'] ??
+          json['phoneNumber'],
+      
       address: json['address'],
-      areaId: json['areaId'],
+      
+      areaId: json['areaId'] ?? '',
+      
       yearsInPermanentAddress: json['yearsInPermanentAddress'],
-      currentAddress: json['currentAddress'],
-      permanentAddress: json['permanentAddress'],
-      fathersName: json['fathersName'],
+      
+      currentAddress: json['currentAddress'] ??
+          json['residentialAddress'],
+      
+      permanentAddress: json['permanentAddress'] ??
+          json['homeAddress'],
+      
+      fathersName: json['fathersName'] ??
+          json['fatherName'] ??
+          json['father'] ??
+          '',
+      
       mode: json['mode'],
+      
       applicantUserId: json['applicantUserId'],
+      
       updatedAt: json['updatedAt'],
       createdAt: json['createdAt'],
-      documents: json['documents'] != null ? List<dynamic>.from(json['documents']) : null,
-      fieldReviews: json['fieldReviews'] != null ? List<dynamic>.from(json['fieldReviews']) : null,
+      
+      documents: json['documents'] != null
+          ? List<dynamic>.from(json['documents'])
+          : null,
+      
+      fieldReviews: json['fieldReviews'] != null
+          ? List<dynamic>.from(json['fieldReviews'])
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {};
 
-    // Only add fields that are allowed/expected for creation/update
-    
+    data['id'] = id;
+    data['applicantName'] = applicantName;
     data['email'] = email;
+    if (profileImage != null) data['profileImage'] = profileImage;
     data['aadhaarNumber'] = aadhaarNumber;
-    
-    // familyId was "not allowed".
-    // data['familyId'] = familyId; 
-    
-    // constituency was "not allowed"
-    // data['constituency'] = constituency;
-    
-    // "mode" must be one of [ONLINE, OFFLINE]
+    data['familyId'] = familyId;
+    data['constituency'] = constituency;
+    data['status'] = status;
+    data['submittedAt'] = submittedAt;
+
     if (mode != null) data['mode'] = mode;
-    
     if (gender != null) data['gender'] = gender;
+    if (dob != null) data['dob'] = dob;
+    if (phone != null) data['phone'] = phone;
+    if (address != null) data['address'] = address;
     
-    // dob was "not allowed".
-    // if (dob != null) data['dob'] = dob;
-    
-    // phone was "not allowed".
-    // if (phone != null) data['phone'] = phone;
-    
-    // address was "not allowed", currentAddress "must be a string".
     if (currentAddress != null) data['currentAddress'] = currentAddress;
-    // If we have address but no currentAddress, use address as currentAddress
-    else if (address != null) data['currentAddress'] = address;
     
     if (areaId != null) data['areaId'] = areaId;
-    if (yearsInPermanentAddress != null) data['yearsInPermanentAddress'] = yearsInPermanentAddress;
+    if (yearsInPermanentAddress != null) {
+      data['yearsInPermanentAddress'] = yearsInPermanentAddress;
+    }
     if (permanentAddress != null) data['permanentAddress'] = permanentAddress;
     if (fathersName != null) data['fathersName'] = fathersName;
     
-    // applicantUserId is probably allowed as it wasn't mentioned
     if (applicantUserId != null) data['applicantUserId'] = applicantUserId;
+    
+    if (updatedAt != null) data['updatedAt'] = updatedAt;
+    if (createdAt != null) data['createdAt'] = createdAt;
+    
+    if (documents != null) data['documents'] = documents;
+    if (fieldReviews != null) data['fieldReviews'] = fieldReviews;
 
     return data;
   }

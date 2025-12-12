@@ -12,7 +12,7 @@ import 'package:nakoda_ji/utils/app_navigations/app_navigation.dart';
 import 'package:nakoda_ji/utils/snackbar_helper.dart';
 
 class SignUpPage extends ConsumerStatefulWidget {
-  SignUpPage({super.key});
+  const SignUpPage({super.key});
 
   @override
   ConsumerState<SignUpPage> createState() => _SignUpPageState();

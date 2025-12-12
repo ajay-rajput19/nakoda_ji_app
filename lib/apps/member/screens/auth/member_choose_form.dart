@@ -5,6 +5,8 @@ import 'package:nakoda_ji/apps/member/screens/dashboard/member_profile.dart';
 import 'package:nakoda_ji/components/buttons/button_with_icon.dart';
 import 'package:nakoda_ji/data/static/color_export.dart';
 import 'package:nakoda_ji/data/static/custom_fonts.dart';
+import 'package:nakoda_ji/utils/localStorage/local_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MemberChooseForm extends StatefulWidget {
   const MemberChooseForm({super.key});
@@ -15,6 +17,22 @@ class MemberChooseForm extends StatefulWidget {
 
 class _MemberChooseFormState extends State<MemberChooseForm> {
   int? selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedSelection();
+  }
+
+  Future<void> _loadSavedSelection() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int savedOption = prefs.getInt(LocalStorage.memberRegistrationSelectedOption) ?? 0;
+    if (savedOption > 0) {
+      setState(() {
+        selectedIndex = savedOption - 1; // Convert to 0-based index
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +63,10 @@ class _MemberChooseFormState extends State<MemberChooseForm> {
                   onTap: () {
                     setState(() {
                       selectedIndex = 0;
+                    });
+                    // Save selection to localStorage
+                    SharedPreferences.getInstance().then((prefs) {
+                      prefs.setInt(LocalStorage.memberRegistrationSelectedOption, 1);
                     });
                   },
                   child: Container(
@@ -85,6 +107,10 @@ class _MemberChooseFormState extends State<MemberChooseForm> {
                   onTap: () {
                     setState(() {
                       selectedIndex = 1;
+                    });
+                    // Save selection to localStorage
+                    SharedPreferences.getInstance().then((prefs) {
+                      prefs.setInt(LocalStorage.memberRegistrationSelectedOption, 2);
                     });
                   },
                   child: Container(
@@ -136,6 +162,11 @@ class _MemberChooseFormState extends State<MemberChooseForm> {
                       );
                       return;
                     }
+
+                    // Clear the saved option when proceeding
+                    SharedPreferences.getInstance().then((prefs) {
+                      prefs.remove(LocalStorage.memberRegistrationSelectedOption);
+                    });
 
                     if (selectedIndex == 0) {
                       Navigator.push(

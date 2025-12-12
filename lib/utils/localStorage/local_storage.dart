@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 enum AllAppsEnum {
   user,
   member
-
 }
 
 class FollowKeys {
@@ -48,6 +47,11 @@ class LocalStorage {
   static const String memberAuthToken = 'memberAuthToken';
 
   static const String userRole = 'userRole';
+  
+  // Member registration step persistence
+  static const String memberRegistrationStep = 'memberRegistrationStep';
+  static const String memberRegistrationApplicationId = 'memberRegistrationApplicationId';
+  static const String memberRegistrationSelectedOption = 'memberRegistrationSelectedOption';
 
 
   // Initialize SharedPreferences safely and asynchronously
@@ -72,6 +76,23 @@ class SharedPrefString {
   }
 
   static Future<void> removePrefs(String givenKey) async {
+    await _initPrefs();
+    _prefs?.remove(givenKey);
+  }
+  
+  // Integer preference helpers
+  static Future<void> setIntPrefs(String givenKey, int givenValue) async {
+    await _initPrefs();
+    _prefs?.setInt(givenKey, givenValue);
+  }
+  
+  static Future<int> getIntPrefs(String givenKey) async {
+    await _initPrefs();
+    return _prefs?.getInt(givenKey) ?? 0;
+  }
+  
+  // Remove integer preference
+  static Future<void> removeIntPrefs(String givenKey) async {
     await _initPrefs();
     _prefs?.remove(givenKey);
   }

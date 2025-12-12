@@ -16,6 +16,10 @@ class Urls {
       '$baseUrl/membership/applications/draft'; // POST
   static String membershipDocumentUpload =
       '$baseUrl/membership/applications/document/upload'; // POST
+
+  static String membershipReviewUser(String applicationId) => 
+      '$baseUrl/membership/review/user/$applicationId'; // GET 
+
   static String membershipApplications =
       '$baseUrl/membership/applications'; // GET (list), POST (draft)
   static String membershipSubmit =
@@ -34,8 +38,9 @@ class Urls {
       '$baseUrl/membership/payments/verify'; // POST
   static String membershipPaymentFailed =
       '$baseUrl/membership/payments/record-failed'; // POST
-  static String membershipReviewUser = '$baseUrl/membership/review/user'; // GET
   static String membershipReview = '$baseUrl/membership/review'; // GET
   static String membershipUser = '$baseUrl/membership/user'; // GET
   static String activeAreas = '$baseUrl/areas/active'; // GET
+  static String documentTypesUrl =
+      '$baseUrl/membership/masters/document-types'; // GET
 }

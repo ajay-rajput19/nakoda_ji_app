@@ -11,7 +11,7 @@ import 'package:nakoda_ji/data/static/custom_fonts.dart';
 import 'package:nakoda_ji/utils/snackbar_helper.dart';
 
 class MemberStepOne extends StatefulWidget {
-  final Function()? onStepComplete;
+  final Function(String id)? onStepComplete;
 
   const MemberStepOne({super.key, this.onStepComplete});
 
@@ -89,7 +89,7 @@ class _MemberStepOneState extends State<MemberStepOne> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          content: Container(
+          content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
               padding: EdgeInsets.zero,
@@ -285,7 +285,11 @@ class _MemberStepOneState extends State<MemberStepOne> {
       if (response.isSuccess()) {
         SnackbarHelper.show(context, message: "Draft saved successfully");
         if (widget.onStepComplete != null) {
-          widget.onStepComplete!();
+          String id = '';
+          if (response.data != null && response.data is Map) {
+             id = response.data['_id'] ?? response.data['id'] ?? '';
+          }
+          widget.onStepComplete!(id);
         }
       } else {
         print("Failed to save draft");
@@ -293,7 +297,7 @@ class _MemberStepOneState extends State<MemberStepOne> {
         SnackbarHelper.showError(
           context,
           message:
-              "Failed to save draft: ${response.message ?? 'Unknown error'}",
+              "Failed to save draft: ${response.message }",
         );
       }
     }
@@ -419,7 +423,7 @@ class _MemberStepOneState extends State<MemberStepOne> {
                 SizedBox(height: 4),
                 DropdownButtonFormField<String>(
                   dropdownColor: Colors.white,
-                  value: _selectedAreaId,
+                  initialValue: _selectedAreaId,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.white,

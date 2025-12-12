@@ -9,7 +9,7 @@ class OptionCard extends StatelessWidget {
   final Color iconColor;
   final bool isSelected; 
 
-  const OptionCard({
+  const OptionCard({super.key, 
     required this.title,
     required this.description,
     required this.bullets,

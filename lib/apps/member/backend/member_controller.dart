@@ -20,6 +20,23 @@ class MemberController {
     return headers;
   }
 
+  // Helper method to extract MembershipModel from BackendResponse data
+  static MembershipModel? _extractMembershipModel(dynamic data) {
+    if (data == null) return null;
+
+    try {
+      if (data is Map<String, dynamic>) {
+        return MembershipModel.fromJson(data);
+      } else if (data is List && data.isNotEmpty) {
+        return MembershipModel.fromJson(data[0]);
+      }
+    } catch (e) {
+      print('Error extracting membership model: $e');
+    }
+
+    return null;
+  }
+
   // ADD NEW DRAFT
   static Future<BackendResponse> addMembershipDraft(
     MembershipModel membership,
@@ -66,7 +83,12 @@ class MemberController {
 
         if (response.statusCode == 200 || response.statusCode == 201) {
           results.add(json.decode(response.body));
-        } else {}
+        } else {
+          return BackendResponse(
+            success: false,
+            message: 'Error uploading document: ${response.statusCode}',
+          );
+        }
       }
       return BackendResponse(
         success: true,
@@ -77,6 +99,82 @@ class MemberController {
       return BackendResponse(
         success: false,
         message: 'Error uploading documents: $e',
+      );
+    }
+  }
+
+  // GET MEMBERSHIP PROFILE USING REVIEW USER ENDPOINT
+  static Future<BackendResponse> getMembershipReviewProfile(String applicationId) async {
+    try {
+      final headers = await _getHeaders();
+      final url = Uri.parse(Urls.membershipReviewUser(applicationId));
+      
+      final response = await http.get(
+        url,
+        headers: headers,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Parse the response
+        final responseData = jsonDecode(response.body);
+        
+        // Extract the application data from the nested structure
+        if (responseData is Map<String, dynamic> && 
+            responseData.containsKey('data') &&
+            responseData['data'] is Map<String, dynamic>) {
+          
+          final dataObj = responseData['data'];
+          
+          if (dataObj.containsKey('application')) {
+            // Extract application data
+            final applicationData = dataObj['application'];
+            
+            // TEMP DEBUG - Check what's in the application data
+            print('TEMP_DEBUG: Application data keys: ${applicationData.keys}');
+            print('TEMP_DEBUG: Full Name field: ${applicationData['fullName']}');
+            print('TEMP_DEBUG: Applicant Name field: ${applicationData['applicantName']}');
+            
+            // Extract documents data if available
+            final documentsData = dataObj['documents'];
+            
+            // Combine application and documents data
+            final combinedData = {
+              ...applicationData,
+              if (documentsData != null) 'documents': documentsData,
+            };
+            
+            return BackendResponse(
+              success: true,
+              message: responseData['message'] ?? 'Success',
+              data: combinedData,
+            );
+          } else {
+            // If no application key, use data directly
+            return BackendResponse(
+              success: true,
+              message: responseData['message'] ?? 'Success',
+              data: dataObj,
+            );
+          }
+        } else {
+          // If structure is different, return as is
+          return BackendResponse(
+            success: true,
+            message: responseData['message'] ?? 'Success',
+            data: responseData['data'],
+          );
+        }
+      }
+
+      return BackendResponse(
+        success: false,
+        message: 'Error fetching review profile: ${response.statusCode}',
+        detail: response.body,
+      );
+    } catch (e) {
+      return BackendResponse(
+        success: false,
+        message: 'Error fetching review profile: $e',
       );
     }
   }
@@ -110,6 +208,19 @@ class MemberController {
     }
   }
 
+  // GET BY ID AS MODEL
+  static Future<MembershipModel?> fetchMembershipModelById(String id) async {
+    try {
+      final response = await fetchMembershipById(id);
+      if (response.isSuccess() && response.data != null) {
+        return _extractMembershipModel(response.data);
+      }
+    } catch (e) {
+      print('Error fetching membership model: $e');
+    }
+    return null;
+  }
+
   // GET MEMBERSHIP PROFILE
   static Future<BackendResponse> getMembershipProfile(String id) async {
     try {
@@ -125,6 +236,19 @@ class MemberController {
         message: 'Error fetching profile: $e',
       );
     }
+  }
+
+  // GET MEMBERSHIP PROFILE AS MODEL
+  static Future<MembershipModel?> getMembershipProfileModel(String id) async {
+    try {
+      final response = await getMembershipProfile(id);
+      if (response.isSuccess() && response.data != null) {
+        return _extractMembershipModel(response.data);
+      }
+    } catch (e) {
+      print('Error getting membership profile model: $e');
+    }
+    return null;
   }
 
   // SUBMIT MEMBERSHIP APPLICATION
@@ -425,23 +549,23 @@ class MemberController {
   }
 
   // GET REVIEW PROFILE
-  static Future<BackendResponse> getMembershipReviewProfile(
-    String applicationId,
-  ) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('${Urls.membershipReviewUser}/$applicationId'),
-        headers: headers,
-      );
-      return BackendResponse.fromJson(json.decode(response.body));
-    } catch (e) {
-      return BackendResponse(
-        success: false,
-        message: 'Error GET review profile: $e',
-      );
-    }
-  }
+  // static Future<BackendResponse> getMembershipReviewProfil(
+  //   String applicationId,
+  // ) async {
+  //   try {
+  //     final headers = await _getHeaders();
+  //     final response = await http.get(
+  //       Uri.parse('${Urls.membershipReviewUser}/$applicationId'),
+  //       headers: headers,
+  //     );
+  //     return BackendResponse.fromJson(json.decode(response.body));
+  //   } catch (e) {
+  //     return BackendResponse(
+  //       success: false,
+  //       message: 'Error GET review profile: $e',
+  //     );
+  //   }
+  // }
 
   // FETCH ACTIVE AREAS
   static Future<BackendResponse> fetchActiveAreas() async {
@@ -456,6 +580,23 @@ class MemberController {
       return BackendResponse(
         success: false,
         message: 'Error fetching active areas: $e',
+      );
+    }
+  }
+
+  // FETCH DOCUMENT TYPES
+  static Future<BackendResponse> fetchAllDocumentTypes() async {
+    try {
+      final headers = await _getHeaders();
+      final url = Uri.parse(Urls.documentTypesUrl);
+
+      final response = await http.get(url, headers: headers);
+
+      return BackendResponse.fromJson(json.decode(response.body));
+    } catch (e) {
+      return BackendResponse(
+        success: false,
+        message: 'Error fetching document types: $e',
       );
     }
   }
