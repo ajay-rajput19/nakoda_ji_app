@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:nakoda_ji/data/static/color_export.dart';
 import 'package:nakoda_ji/data/static/custom_fonts.dart';
 
@@ -11,6 +12,8 @@ class PrimaryInput extends StatelessWidget {
     required this.keyboardType,
     this.obscureText = false,
     this.suffixIcon,
+    this.inputFormatters,
+    this.readOnly = false,
   });
 
   final String title;
@@ -19,6 +22,8 @@ class PrimaryInput extends StatelessWidget {
   final TextInputType keyboardType;
   final bool obscureText;
   final Widget? suffixIcon;
+  final List<TextInputFormatter>? inputFormatters;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +57,9 @@ class PrimaryInput extends StatelessWidget {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          obscureText: obscureText,
+          inputFormatters: inputFormatters,
+          readOnly: readOnly,
 
           style: TextStyle(
             fontFamily: CustomFonts.poppins,

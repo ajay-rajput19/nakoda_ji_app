@@ -8,6 +8,7 @@ class SnackbarHelper {
     Color backgroundColor = const Color.fromARGB(221, 83, 226, 90),
     int duration = 3,
   }) {
+    print('💬 [SNACKBAR] $message');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -25,6 +26,7 @@ class SnackbarHelper {
   }
 
   static void showError(BuildContext context, {required String message}) {
+    print('❌ [SNACKBAR ERROR] $message');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

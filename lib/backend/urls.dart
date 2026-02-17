@@ -17,8 +17,8 @@ class Urls {
   static String membershipDocumentUpload =
       '$baseUrl/membership/applications/document/upload'; // POST
 
-  static String membershipReviewUser(String applicationId) => 
-      '$baseUrl/membership/review/user/$applicationId'; // GET 
+  static String membershipReviewUser(String applicationId) =>
+      '$baseUrl/membership/review/user/$applicationId'; // GET
 
   static String membershipApplications =
       '$baseUrl/membership/applications'; // GET (list), POST (draft)

@@ -9,7 +9,10 @@ import 'package:nakoda_ji/components/inputs/primary_input.dart';
 import 'package:nakoda_ji/data/static/color_export.dart';
 import 'package:nakoda_ji/utils/app_navigations/app_navigation.dart';
 import 'package:nakoda_ji/apps/user/backend/user_auth_controller.dart';
+import 'package:nakoda_ji/apps/member/screens/auth/member_register_page.dart';
+import 'package:nakoda_ji/apps/member/screens/auth/member_status_page.dart';
 import 'package:nakoda_ji/utils/snackbar_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserLogin extends StatefulWidget {
   const UserLogin({super.key});
@@ -74,11 +77,27 @@ class _UserLoginState extends State<UserLogin> {
           backgroundColor: Colors.green,
         );
 
-        Future.delayed(Duration(seconds: 1), () {
+        Future.delayed(Duration(seconds: 1), () async {
           if (mounted) {
+            final bool hasApp = result['hasMembershipApplication'] ?? false;
+            final String? appId = result['membershipApplicationId'];
+
             if (role.toLowerCase() == 'member') {
               AppNavigation(context).pushReplacement(MemberDashboard());
+            } else if (hasApp && appId != null) {
+              // Redirect directly to Status Page if application exists
+              AppNavigation(context).pushReplacement(
+                MemberStatusPage(
+                  applicationId: appId,
+                  onEdit: () {
+                    AppNavigation(context).pushReplacement(
+                      const MemberRegisterPage(),
+                    );
+                  },
+                ),
+              );
             } else {
+              // If no application, take them to choice form
               AppNavigation(context).pushReplacement(MemberChooseForm());
             }
           }
@@ -142,7 +161,7 @@ class _UserLoginState extends State<UserLogin> {
                         _isPasswordVisible
                             ? Icons.visibility
                             : Icons.visibility_off,
-                        color: CustomColors.clrForgotPass,
+                        color: CustomColors.clrBtnBg,
                       ),
                       onPressed: () {
                         setState(() {
@@ -171,7 +190,8 @@ class _UserLoginState extends State<UserLogin> {
                   const SizedBox(height: 20),
 
                   PrimaryButton(
-                    label: _isLoading ? "Logging in..." : "Login",
+                    label: "Login",
+                    isLoading: _isLoading,
                     onTap: _isLoading ? () {} : _handleLogin,
                   ),
                   SizedBox(height: 14),

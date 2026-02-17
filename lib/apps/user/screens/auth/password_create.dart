@@ -20,6 +20,8 @@ class PasswordCreate extends StatefulWidget {
 class _PasswordCreateState extends State<PasswordCreate> {
   final TextEditingController passwordCtrl = TextEditingController();
   final TextEditingController confirmPasswordCtrl = TextEditingController();
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
 
   Future<void> _handleCreatePassword() async {
@@ -111,7 +113,20 @@ class _PasswordCreateState extends State<PasswordCreate> {
                     hint: "Enter password",
                     controller: passwordCtrl,
                     keyboardType: TextInputType.visiblePassword,
-                    obscureText: true,
+                    obscureText: !_isPasswordVisible,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                        color: CustomColors.clrBtnBg,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
+                    ),
                   ),
                   const SizedBox(height: 14),
                   PrimaryInput(
@@ -119,14 +134,28 @@ class _PasswordCreateState extends State<PasswordCreate> {
                     hint: "Confirm password",
                     controller: confirmPasswordCtrl,
                     keyboardType: TextInputType.visiblePassword,
-                    obscureText: true,
+                    obscureText: !_isConfirmPasswordVisible,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isConfirmPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                        color: CustomColors.clrBtnBg,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                        });
+                      },
+                    ),
                   ),
                   const SizedBox(height: 14),
 
                   const SizedBox(height: 20),
 
                   PrimaryButton(
-                    label: _isLoading ? "Creating..." : "Create Password",
+                    label: "Create Password",
+                    isLoading: _isLoading,
                     onTap: _isLoading ? () {} : _handleCreatePassword,
                   ),
                   SizedBox(height: 14),

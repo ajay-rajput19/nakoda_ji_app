@@ -48,6 +48,12 @@ class LocalStorage {
 
   static const String userRole = 'userRole';
   
+  // User data for pre-filling membership form
+  static const String userFirstName = 'userFirstName';
+  static const String userLastName = 'userLastName';
+  static const String userEmail = 'userEmail';
+  static const String userPhone = 'userPhone';
+  
   // Member registration step persistence
   static const String memberRegistrationStep = 'memberRegistrationStep';
   static const String memberRegistrationApplicationId = 'memberRegistrationApplicationId';

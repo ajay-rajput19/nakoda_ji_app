@@ -10,6 +10,8 @@ import 'package:nakoda_ji/components/inputs/primary_input.dart';
 import 'package:nakoda_ji/data/static/color_export.dart';
 import 'package:nakoda_ji/utils/app_navigations/app_navigation.dart';
 import 'package:nakoda_ji/utils/snackbar_helper.dart';
+import 'package:nakoda_ji/utils/localStorage/local_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SignUpPage extends ConsumerStatefulWidget {
   const SignUpPage({super.key});
@@ -19,11 +21,12 @@ class SignUpPage extends ConsumerStatefulWidget {
 }
 
 class _SignUpPageState extends ConsumerState<SignUpPage> {
-  final TextEditingController nameCtrl = TextEditingController();
+  final TextEditingController firstNameCtrl = TextEditingController();
+  final TextEditingController lastNameCtrl = TextEditingController();
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController mobileCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
-  
+
   bool _isPasswordVisible = false;
 
   bool _isLoading = false;
@@ -36,8 +39,13 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
       successMessage = '';
     });
 
-    if (nameCtrl.text.trim().isEmpty) {
-      _showError('Name is required');
+    if (firstNameCtrl.text.trim().isEmpty) {
+      _showError('First name is required');
+      return false;
+    }
+
+    if (lastNameCtrl.text.trim().isEmpty) {
+      _showError('Last name is required');
       return false;
     }
 
@@ -98,7 +106,8 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
 
     final user = UserModel(
       id: '',
-      firstName: nameCtrl.text.trim(),
+      firstName: firstNameCtrl.text.trim(),
+      lastName: lastNameCtrl.text.trim(),
       email: emailCtrl.text.trim(),
       phone: mobileCtrl.text.trim(),
       password: passwordCtrl.text,
@@ -112,6 +121,13 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
       });
 
       if (result == 'success') {
+        // Save user data to SharedPreferences for membership form
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString(LocalStorage.userFirstName, firstNameCtrl.text.trim());
+        await prefs.setString(LocalStorage.userLastName, lastNameCtrl.text.trim());
+        await prefs.setString(LocalStorage.userEmail, emailCtrl.text.trim());
+        await prefs.setString(LocalStorage.userPhone, mobileCtrl.text.trim());
+        
         _showSuccess(
           'Registration successful! Please check your email for verification code.',
         );
@@ -172,9 +188,17 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                   AuthTopWidget(title: "Sign Up"),
                   SizedBox(height: 15),
                   PrimaryInput(
-                    title: "Full Name",
-                    hint: "Enter your full name",
-                    controller: nameCtrl,
+                    title: "First Name",
+                    hint: "Enter your first name",
+                    controller: firstNameCtrl,
+                    keyboardType: TextInputType.name,
+                  ),
+                  const SizedBox(height: 14),
+
+                  PrimaryInput(
+                    title: "Last Name",
+                    hint: "Enter your last name",
+                    controller: lastNameCtrl,
                     keyboardType: TextInputType.name,
                   ),
                   const SizedBox(height: 14),
@@ -209,7 +233,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                             _isPasswordVisible
                                 ? Icons.visibility
                                 : Icons.visibility_off,
-                            color: CustomColors.clrForgotPass,
+                            color: CustomColors.clrBtnBg,
                           ),
                           onPressed: () {
                             setState(() {
@@ -228,7 +252,8 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                   const SizedBox(height: 20),
 
                   PrimaryButton(
-                    label: _isLoading ? "Registering..." : "Register",
+                    label: "Register",
+                    isLoading: _isLoading,
                     onTap: _isLoading ? () {} : () => _handleRegister(),
                   ),
 

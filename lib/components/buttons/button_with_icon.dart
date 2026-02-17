@@ -8,6 +8,7 @@ class ButtonWithIcon extends StatelessWidget {
   final Widget? icon;
   final bool iconAtEnd;
   final bool isDisabled;
+  final bool isLoading;
 
   const ButtonWithIcon({
     super.key,
@@ -16,45 +17,57 @@ class ButtonWithIcon extends StatelessWidget {
     this.icon,
     this.iconAtEnd = false,
     this.isDisabled = false,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: isDisabled ? null : onTap,
+      onTap: isDisabled || isLoading ? null : onTap,
       child: Container(
         height: 60,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: isDisabled
-              ? CustomColors.clrBtnBg.withOpacity(0.4)
+          color: isDisabled || isLoading
+              ? Colors.grey.shade400
               : CustomColors.clrBtnBg,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Icon at start
-            if (!iconAtEnd && icon != null) ...[
-              icon!,
-              const SizedBox(width: 8),
-            ],
+        child: isLoading
+            ? Center(
+                child: SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Icon at start
+                  if (!iconAtEnd && icon != null) ...[
+                    icon!,
+                    const SizedBox(width: 8),
+                  ],
 
-            // Label Text
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: CustomFonts.poppins,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+                  // Label Text
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontFamily: CustomFonts.poppins,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+
+                  // Icon at end
+                  if (iconAtEnd && icon != null) ...[const SizedBox(width: 8), icon!],
+                ],
               ),
-            ),
-
-            // Icon at end
-            if (iconAtEnd && icon != null) ...[const SizedBox(width: 8), icon!],
-          ],
-        ),
       ),
     );
   }

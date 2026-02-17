@@ -14,7 +14,11 @@ class OtpVerify extends ConsumerStatefulWidget {
   final String email;
   final bool isForgotPassword;
 
-  const OtpVerify({super.key, required this.email, this.isForgotPassword = false});
+  const OtpVerify({
+    super.key,
+    required this.email,
+    this.isForgotPassword = false,
+  });
 
   @override
   ConsumerState<OtpVerify> createState() => _OtpVerifyState();
@@ -31,12 +35,12 @@ class _OtpVerifyState extends ConsumerState<OtpVerify> {
   bool _isResending = false;
   bool _isResendDisabled = false;
   int _resendTimer = 0;
-  late Timer _timer;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _startResendTimer();
+    // Timer will start only when user clicks Resend OTP
   }
 
   @override
@@ -47,7 +51,7 @@ class _OtpVerifyState extends ConsumerState<OtpVerify> {
     for (var f in _focusNodes) {
       f.dispose();
     }
-    _timer.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -63,7 +67,7 @@ class _OtpVerifyState extends ConsumerState<OtpVerify> {
       });
 
       if (_resendTimer <= 0) {
-        _timer.cancel();
+        _timer?.cancel();
         setState(() {
           _isResendDisabled = false;
         });
@@ -94,10 +98,7 @@ class _OtpVerifyState extends ConsumerState<OtpVerify> {
           otp,
         );
       } else {
-        result = await UserAuthController.handleOtpVerify(
-          widget.email,
-          otp,
-        );
+        result = await UserAuthController.handleOtpVerify(widget.email, otp);
       }
 
       setState(() {
@@ -106,13 +107,11 @@ class _OtpVerifyState extends ConsumerState<OtpVerify> {
 
       if (result == 'success') {
         _showSuccess('OTP verified successfully!');
-        
+
         if (widget.isForgotPassword) {
           Future.delayed(Duration(seconds: 1), () {
             if (mounted) {
-              AppNavigation(context).push(PasswordCreate(
-                token: otp,
-              ));
+              AppNavigation(context).push(PasswordCreate(token: otp));
             }
           });
         } else {
@@ -191,9 +190,9 @@ class _OtpVerifyState extends ConsumerState<OtpVerify> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   AuthTopWidget(
-                    title: widget.isForgotPassword 
-                      ? "Reset Password OTP" 
-                      : "OTP Verification"
+                    title: widget.isForgotPassword
+                        ? "Reset Password OTP"
+                        : "OTP Verification",
                   ),
                   const SizedBox(height: 16),
 
@@ -226,17 +225,37 @@ class _OtpVerifyState extends ConsumerState<OtpVerify> {
                   ),
                   const SizedBox(height: 20),
                   PrimaryButton(
-                    label: _isVerifying ? "Verifying..." : "Verify OTP",
+                    label: "Verify OTP",
+                    isLoading: _isVerifying,
                     onTap: _isVerifying
                         ? () {}
                         : () => _handleOtpVerification(),
                   ),
                   SizedBox(height: 20),
-                  Text(
-                    widget.isForgotPassword
-                      ? "Enter the OTP sent to your email to reset your password."
-                      : "Enter the OTP shared on Your Email.",
-                    style: TextStyle(color: Colors.black87, fontSize: 16),
+                  RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      style: TextStyle(color: Colors.black87, fontSize: 14),
+                      children: [
+                        TextSpan(
+                          text: widget.isForgotPassword
+                              ? "Enter the OTP sent to "
+                              : "Enter the OTP sent to ",
+                        ),
+                        TextSpan(
+                          text: widget.email,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: CustomColors.clrBtnBg,
+                          ),
+                        ),
+                        TextSpan(
+                          text: widget.isForgotPassword
+                              ? " to reset your password."
+                              : " to verify your account.",
+                        ),
+                      ],
+                    ),
                   ),
                   SizedBox(height: 8),
                 ],

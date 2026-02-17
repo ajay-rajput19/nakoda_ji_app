@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:get/get_navigation/src/root/get_material_app.dart';
+import 'package:get/get.dart';
 import 'package:nakoda_ji/apps/member/screens/auth/member_choose_form.dart';
 import 'package:nakoda_ji/apps/member/screens/auth/member_register_page.dart';
+import 'package:nakoda_ji/apps/member/screens/auth/member_status_page.dart';
 import 'package:nakoda_ji/apps/member/screens/dashboard/member_dashboard.dart';
 import 'package:nakoda_ji/apps/user/screens/auth/user_Signup.dart';
 import 'package:nakoda_ji/utils/localStorage/local_storage.dart';
@@ -31,17 +32,26 @@ Future<void> main() async {
     if (role != null && role.toLowerCase() == 'member') {
       initialWidget = const MemberDashboard();
     } else {
-      // Check if there's a saved registration step
-      int savedStep = prefs.getInt(LocalStorage.memberRegistrationStep) ?? 0;
-      int selectedOption = prefs.getInt(LocalStorage.memberRegistrationSelectedOption) ?? 0;
+      // Check if user has an existing application
+      bool hasApp = prefs.getBool('hasMembershipApplication') ?? false;
+      String? appId = prefs.getString('memberRegistrationApplicationId');
       
-      if (savedStep > 0) {
-        // User was in the middle of registration, continue from where they left off
+      // Also check if there's a saved registration step locally
+      int savedStep = prefs.getInt(LocalStorage.memberRegistrationStep) ?? 0;
+      
+      if (hasApp && appId != null) {
+        // User already has a submitted application, show status page
+        initialWidget = MemberStatusPage(
+          applicationId: appId,
+          onEdit: () {
+            Get.offAll(() => const MemberRegisterPage());
+          },
+        );
+      } else if (savedStep > 0) {
+        // User is in the middle of a draft
         initialWidget = const MemberRegisterPage();
-      } else if (selectedOption > 0) {
-        // User selected an option but didn't start registration
-        initialWidget = const MemberChooseForm();
       } else {
+        // New user or no application yet
         initialWidget = const MemberChooseForm();
       }
     }

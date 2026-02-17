@@ -46,6 +46,7 @@ dependencies:
   dotted_border: ^3.1.0
   syncfusion_flutter_pdfviewer: ^31.2.16
   device_info_plus: ^12.1.0
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:

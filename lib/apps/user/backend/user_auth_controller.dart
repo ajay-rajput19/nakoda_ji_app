@@ -84,6 +84,8 @@ class UserAuthController {
         if (res.isSuccess()) {
           String? role;
           String? token;
+          bool hasApp = false;
+          String? appId;
 
           if (res.data != null && res.data is Map<String, dynamic>) {
             final data = res.data;
@@ -95,15 +97,27 @@ class UserAuthController {
 
             if (data['user'] is Map) {
               final user = data['user'];
+              
+              // Extract roles
               if (user['roles'] is List && user['roles'].isNotEmpty) {
                 role = user['roles'][0];
               } else if (user['role'] is String) {
                 role = user['role'];
               }
-            } else if (data['roles'] is List && data['roles'].isNotEmpty) {
-              role = data['roles'][0];
-            } else if (data['role'] is String) {
-              role = data['role'];
+
+              // Extract and save membership flags
+              hasApp = user['hasMembershipApplication'] ?? false;
+              appId = user['membershipApplicationId']?.toString();
+
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('hasMembershipApplication', hasApp);
+              if (appId != null) {
+                await prefs.setString('memberRegistrationApplicationId', appId);
+              }
+              
+              print('📍 [UserAuthController] Role: $role');
+              print('📍 [UserAuthController] Has Application: $hasApp');
+              print('📍 [UserAuthController] Application ID: $appId');
             }
 
             if (token != null) {
@@ -120,6 +134,8 @@ class UserAuthController {
             'success': true,
             'message': 'success',
             'role': role ?? 'user',
+            'hasMembershipApplication': hasApp,
+            'membershipApplicationId': appId,
           };
         } else {
           return {

@@ -88,7 +88,8 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                   SizedBox(height: 20),
 
                   PrimaryButton(
-                    label: _isLoading ? "Sending..." : "Send Reset Instructions",
+                    label: "Send Reset Instructions",
+                    isLoading: _isLoading,
                     onTap: _isLoading ? () {} : _handleForgotPassword,
                   ),
 

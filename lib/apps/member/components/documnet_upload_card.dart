@@ -9,6 +9,8 @@ class DocumentUploadCard extends StatefulWidget {
   final String subTitle;
   final bool isRequired;
   final Function(File?) onFileSelected;
+  final bool initialUploaded;
+  final String? initialFileName;
 
   const DocumentUploadCard({
     super.key,
@@ -16,6 +18,8 @@ class DocumentUploadCard extends StatefulWidget {
     required this.subTitle,
     required this.isRequired,
     required this.onFileSelected,
+    this.initialUploaded = false,
+    this.initialFileName,
   });
 
   @override
@@ -24,7 +28,13 @@ class DocumentUploadCard extends StatefulWidget {
 
 class _DocumentUploadCardState extends State<DocumentUploadCard> {
   File? selectedFile;
-  bool isUploaded = false;
+  late bool isUploaded;
+
+  @override
+  void initState() {
+    super.initState();
+    isUploaded = widget.initialUploaded;
+  }
 
   Future<void> pickFile() async {
     final result = await FilePicker.platform.pickFiles(
@@ -192,39 +202,73 @@ class _DocumentUploadCardState extends State<DocumentUploadCard> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: selectedFile == null
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.cloud_upload,
-                        size: 40,
-                        color: Colors.grey.shade500,
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        "Drag and drop your file here",
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const Text(
-                        "or click to browse files",
-                        style: TextStyle(fontSize: 13, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        onPressed: pickFile,
-                        icon: Icon(Icons.folder_open),
-                        label: Text("Choose File"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: CustomColors.clrBtnBg,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  )
+                ? (isUploaded && widget.initialFileName != null)
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            size: 40,
+                            color: Colors.green.shade400,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            widget.initialFileName!,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Text(
+                            "Already Uploaded",
+                            style: TextStyle(fontSize: 13, color: Colors.green),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton.icon(
+                            onPressed: pickFile,
+                            icon: Icon(Icons.refresh),
+                            label: Text("Replace File"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: CustomColors.clrBtnBg,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.cloud_upload,
+                            size: 40,
+                            color: Colors.grey.shade500,
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            "Drag and drop your file here",
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Text(
+                            "or click to browse files",
+                            style: TextStyle(fontSize: 13, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton.icon(
+                            onPressed: pickFile,
+                            icon: Icon(Icons.folder_open),
+                            label: Text("Choose File"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: CustomColors.clrBtnBg,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      )
                 : Stack(
                     children: [
                       // Preview of selected file

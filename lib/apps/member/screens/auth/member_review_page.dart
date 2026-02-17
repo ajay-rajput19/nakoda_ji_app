@@ -1,20 +1,25 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:nakoda_ji/apps/member/backend/member_controller.dart';
 import 'package:nakoda_ji/backend/models/membership_model.dart';
-import 'package:nakoda_ji/backend/models/backend_response.dart';
 import 'package:nakoda_ji/components/buttons/button_with_icon.dart';
 import 'package:nakoda_ji/data/static/color_export.dart';
 import 'package:nakoda_ji/data/static/custom_fonts.dart';
 import 'package:nakoda_ji/utils/localStorage/local_storage.dart';
 import 'package:nakoda_ji/utils/snackbar_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 
 class MemberReviewPage extends StatefulWidget {
   final String? applicationId;
+  final bool isReviewMode;
+  final Function(int step)? onEditStep;
 
-  const MemberReviewPage({super.key, this.applicationId});
+  const MemberReviewPage({
+    super.key,
+    this.applicationId,
+    this.isReviewMode = false,
+    this.onEditStep,
+  });
 
   @override
   State<MemberReviewPage> createState() => _MemberReviewPageState();
@@ -22,7 +27,9 @@ class MemberReviewPage extends StatefulWidget {
 
 class _MemberReviewPageState extends State<MemberReviewPage> {
   bool _isLoading = true;
+  bool _isSubmitting = false;
   MembershipModel? _membershipData;
+  bool _isConfirmed = false;
 
   @override
   void initState() {
@@ -45,7 +52,7 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
       _isLoading = true;
     });
 
-    final response = await MemberController.getMembershipReviewProfile(
+    final response = await MemberController.fetchMembershipById(
       widget.applicationId!,
     );
 
@@ -64,7 +71,9 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
             });
           }
         }
-      } catch (e) {
+      } catch (e, stack) {
+        print('❌ [MemberReviewPage] Parsing Error: $e');
+        print('❌ [MemberReviewPage] Stack Trace: $stack');
         if (mounted) {
           setState(() => _isLoading = false);
           // Show error message
@@ -74,6 +83,8 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
         }
       }
     } else {
+      print('❌ [MemberReviewPage] API Error: ${response.message}');
+      print('❌ [MemberReviewPage] API Detail: ${response.detail}');
       if (mounted) {
         setState(() => _isLoading = false);
         // Show detailed error message
@@ -90,6 +101,109 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
         ).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     }
+  }
+
+  Future<void> _submitApplication() async {
+    if (widget.applicationId == null) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final response = await MemberController.submitMembership({
+        'id': widget.applicationId,
+      });
+
+      if (response.isSuccess()) {
+        // Clear saved registration data
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.remove(LocalStorage.memberRegistrationStep);
+        await prefs.remove(LocalStorage.memberRegistrationApplicationId);
+        await prefs.remove(LocalStorage.memberRegistrationSelectedOption);
+
+        if (mounted) {
+          // Show auto-dismissing success dialog
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              backgroundColor: CustomColors.clrWhite,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Column(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 60),
+                  SizedBox(height: 16),
+                  Text(
+                    "Success!",
+                    style: TextStyle(
+                      color: CustomColors.clrBlack,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: CustomFonts.poppins,
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                "Your membership application has been submitted successfully and is now under review.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: CustomColors.clrBlack,
+                  fontFamily: CustomFonts.poppins,
+                ),
+              ),
+            ),
+          );
+
+          // Wait for 2.5 seconds then close dialog and refresh UI
+          await Future.delayed(Duration(milliseconds: 2500));
+          if (mounted) {
+            Navigator.of(context).pop(); // Close dialog
+            // Refresh the data to show SUBMITTED status and hide edit buttons/submit button
+            setState(() => _isSubmitting = false);
+            _fetchMembershipData();
+          }
+        }
+      } else {
+        if (mounted) {
+          SnackbarHelper.showError(
+            context,
+            message: "Submission failed: ${response.message}",
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(
+          context,
+          message: "An error occurred during submission",
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  String _formatDate(String? date) {
+    if (date == null || date.isEmpty) return 'Not provided';
+    if (date.contains('/')) return date; // Already formatted
+    try {
+      DateTime dt = DateTime.parse(date);
+      return "${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}";
+    } catch (e) {
+      return date.split('T')[0];
+    }
+  }
+
+  String _formatAadhar(String? aadhar) {
+    if (aadhar == null || aadhar.isEmpty) return 'Not provided';
+    String clean = aadhar.replaceAll(' ', '');
+    if (clean.length == 12) {
+      return "${clean.substring(0, 4)} ${clean.substring(4, 8)} ${clean.substring(8, 12)}";
+    }
+    return aadhar; // Return as is if format is unknown
   }
 
   Widget _buildPersonalInfoSection() {
@@ -112,11 +226,11 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
           _buildInfoRow('Application ID', _membershipData!.id),
           _buildInfoRow('Full Name', _membershipData!.applicantName),
           _buildInfoRow('Gender', _membershipData!.gender ?? 'Not provided'),
+          _buildInfoRow('Date of Birth', _formatDate(_membershipData!.dob)),
           _buildInfoRow(
-            'Date of Birth',
-            _membershipData!.dob ?? 'Not provided',
+            'Aadhar Number',
+            _formatAadhar(_membershipData!.aadhaarNumber),
           ),
-          _buildInfoRow('Aadhar Number', _membershipData!.aadhaarNumber),
           _buildInfoRow('Family ID', _membershipData!.familyId),
           _buildInfoRow(
             'Phone Number',
@@ -126,6 +240,10 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
           _buildInfoRow(
             'Father\'s Name',
             _membershipData!.fathersName ?? 'Not provided',
+          ),
+          _buildInfoRow(
+             'Area',
+             _membershipData!.area?.name ?? 'Not provided',
           ),
           _buildInfoRow(
             'Current Address',
@@ -142,13 +260,12 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
             _membershipData!.yearsInPermanentAddress?.toString() ??
                 'Not provided',
           ),
-          _buildInfoRow('Constituency', _membershipData!.constituency),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String? value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Container(
@@ -172,7 +289,7 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
             ),
             SizedBox(height: 4),
             Text(
-              value,
+              value ?? 'Not provided',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -314,7 +431,27 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Center(child: CircularProgressIndicator());
+      return _buildSkeleton();
+    }
+
+    if (_isSubmitting) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 20),
+            Text(
+              "Submitting your application...",
+              style: TextStyle(
+                fontFamily: CustomFonts.poppins,
+                fontSize: 16,
+                color: CustomColors.clrBlack,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_membershipData == null) {
@@ -336,6 +473,9 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
       );
     }
 
+    final bool canEdit = widget.isReviewMode &&
+        (_membershipData?.status?.toUpperCase() == 'DRAFT' || _membershipData?.status?.toUpperCase() == 'REJECTED' || _membershipData?.status == null || _membershipData?.status?.isEmpty == true);
+
     // Wrap in SingleChildScrollView to avoid layout constraint issues
     return SingleChildScrollView(
       // padding: EdgeInsets.all(16),
@@ -353,6 +493,32 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
               ),
             ),
           ),
+          if (!canEdit) ...[
+             SizedBox(height: 10),
+             Container(
+               padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+               decoration: BoxDecoration(
+                 color: _membershipData?.status?.toUpperCase() == 'APPROVED' ? Colors.green.shade50 : Colors.blue.shade50,
+                 borderRadius: BorderRadius.circular(8),
+                 border: Border.all(color: _membershipData?.status?.toUpperCase() == 'APPROVED' ? Colors.green : Colors.blue),
+               ),
+               child: Row(
+                 children: [
+                   Icon(Icons.info_outline, color: _membershipData?.status?.toUpperCase() == 'APPROVED' ? Colors.green : Colors.blue),
+                   SizedBox(width: 10),
+                   Expanded(
+                     child: Text(
+                       "Application Status: ${_membershipData?.status ?? 'Submitted'}",
+                       style: TextStyle(
+                         fontWeight: FontWeight.w600,
+                         color: _membershipData?.status?.toUpperCase() == 'APPROVED' ? Colors.green : Colors.blue,
+                       ),
+                     ),
+                   ),
+                 ],
+               ),
+             ),
+          ],
           SizedBox(height: 20),
           // Personal Information Section Header with Edit Button
           Row(
@@ -373,22 +539,19 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
                   ),
                 ],
               ),
-              GestureDetector(
-                onTap: () {
-                  // TODO: Implement navigation to edit personal info
-                  SnackbarHelper.show(
-                    context,
-                    message: "Navigating to edit personal information",
-                  );
-                },
-                child: _buildEditButton(() {
-                  // TODO: Implement navigation to edit personal info
-                  SnackbarHelper.show(
-                    context,
-                    message: "Navigating to edit personal information",
-                  );
-                }),
-              ),
+              if (canEdit)
+                GestureDetector(
+                  onTap: () {
+                    if (widget.onEditStep != null) {
+                      widget.onEditStep!(0); // Go to Step 1
+                    }
+                  },
+                  child: _buildEditButton(() {
+                    if (widget.onEditStep != null) {
+                      widget.onEditStep!(0);
+                    }
+                  }),
+                ),
             ],
           ),
           SizedBox(height: 10),
@@ -417,40 +580,178 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
                   ),
                 ],
               ),
-              GestureDetector(
-                onTap: () {
-                  // TODO: Implement navigation to edit documents
-                  SnackbarHelper.show(
-                    context,
-                    message: "Navigating to edit documents",
-                  );
-                },
-                child: _buildEditButton(() {
-                  // TODO: Implement navigation to edit documents
-                  SnackbarHelper.show(
-                    context,
-                    message: "Navigating to edit documents",
-                  );
-                }),
-              ),
+              if (canEdit)
+                GestureDetector(
+                  onTap: () {
+                    if (widget.onEditStep != null) {
+                      widget.onEditStep!(1); // Go to Step 2
+                    }
+                  },
+                  child: _buildEditButton(() {
+                    if (widget.onEditStep != null) {
+                      widget.onEditStep!(1);
+                    }
+                  }),
+                ),
             ],
           ),
           SizedBox(height: 10),
           _buildDocumentSection(),
-          SizedBox(height: 30),
-          ButtonWithIcon(
-            label: "Submit Application",
-            icon: Icon(Icons.send),
-            onTap: () {
-              // Handle submission
-              SnackbarHelper.show(
-                context,
-                message: "Application submitted successfully!",
-              );
-            },
-          ),
+          if (canEdit) ...[
+            SizedBox(height: 20),
+            Row(
+              children: [
+                Checkbox(
+                  value: _isConfirmed,
+                  activeColor: CustomColors.clrBtnBg,
+                  onChanged: (value) {
+                    setState(() {
+                      _isConfirmed = value ?? false;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: Text(
+                    "I hereby declare that all the information provided above is true and correct to the best of my knowledge.",
+                    style: TextStyle(
+                      fontFamily: CustomFonts.poppins,
+                      fontSize: 13,
+                      color: CustomColors.clrBlack,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 15),
+            ButtonWithIcon(
+              label: "Submit Application",
+              icon: Icon(Icons.send, color: Colors.white),
+              isDisabled: !_isConfirmed,
+              onTap: _submitApplication,
+            ),
+          ],
           SizedBox(height: 20),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSkeleton() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade200,
+      highlightColor: Colors.white,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 200,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            // Status Bar Skeleton
+            Container(
+              height: 50,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            SizedBox(height: 30),
+            // Personal Info Header Skeleton
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 150,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                Container(
+                  width: 60,
+                  height: 35,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            // Personal Info Card Skeleton
+            Container(
+              height: 400,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            SizedBox(height: 30),
+            // Documents Header Skeleton
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 150,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                Container(
+                  width: 60,
+                  height: 35,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            // Documents Card Skeleton
+            Container(
+              height: 150,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            SizedBox(height: 30),
+            // Checkbox and Button Skeleton
+            Container(
+              height: 20,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            SizedBox(height: 15),
+            Container(
+              height: 50,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

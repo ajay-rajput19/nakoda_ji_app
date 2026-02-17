@@ -25,30 +25,56 @@ class _UploadDocumentPageState extends State<UploadDocumentPage> {
   bool _isLoading = true;
   List<dynamic> _documentTypes = [];
   final Map<String, bool> _uploadedStatus = {};
+  final Map<String, String> _uploadedFileNames = {};
   final Map<String, File> _selectedFiles = {};
   final Map<String, bool> _uploadInProgress = {};
 
   @override
   void initState() {
     super.initState();
-    _fetchDocumentTypes();
+    _initializeData();
   }
 
-  Future<void> _fetchDocumentTypes() async {
+  Future<void> _initializeData() async {
     setState(() => _isLoading = true);
-    final response = await MemberController.fetchAllDocumentTypes();
-    if (response.isSuccess() && response.data != null) {
-      if (mounted) {
-        setState(() {
-          _documentTypes = response.data;
-          _isLoading = false;
-        });
-      }
-    } else {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        // Handle error?
-      }
+    
+    // 1. Fetch Doc Types
+    final docTypesResponse = await MemberController.fetchAllDocumentTypes();
+    
+    // 2. Fetch current application to see already uploaded docs
+    final appResponse = await MemberController.fetchMembershipById(widget.applicationId);
+
+    if (mounted) {
+      setState(() {
+        if (docTypesResponse.isSuccess() && docTypesResponse.data != null) {
+          _documentTypes = docTypesResponse.data;
+        }
+
+        if (appResponse.isSuccess() && appResponse.data != null) {
+          final applicationData = appResponse.data;
+          final List<dynamic>? existingDocs = applicationData['documents'];
+          
+          if (existingDocs != null) {
+            for (var doc in existingDocs) {
+              final String? typeId = doc['documentTypeId']?.toString() ?? 
+                                    doc['typeId']?.toString();
+              if (typeId != null) {
+                _uploadedStatus[typeId] = true;
+                
+                // Extract filename
+                String? fileName = doc['fileName'] ?? doc['originalName'];
+                if (fileName == null && doc['url'] != null) {
+                  fileName = doc['url'].toString().split('/').last;
+                }
+                if (fileName != null) {
+                   _uploadedFileNames[typeId] = fileName;
+                }
+              }
+            }
+          }
+        }
+        _isLoading = false;
+      });
     }
   }
 
@@ -175,25 +201,9 @@ class _UploadDocumentPageState extends State<UploadDocumentPage> {
                   subTitle: subTitle,
                   isRequired: isRequired,
                   onFileSelected: (file) => _handleFileUpload(id, file),
+                  initialUploaded: _uploadedStatus[id] ?? false,
+                  initialFileName: _uploadedFileNames[id],
                 ),
-                if (_uploadedStatus[id] == true)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10.0, top: 10.0),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.check_circle, color: Colors.green, size: 20),
-                        SizedBox(width: 5),
-                        Text(
-                          "Uploaded",
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 const SizedBox(height: 20),
               ],
             );
