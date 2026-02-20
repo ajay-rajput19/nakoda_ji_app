@@ -43,4 +43,12 @@ class Urls {
   static String activeAreas = '$baseUrl/areas/active'; // GET
   static String documentTypesUrl =
       '$baseUrl/membership/masters/document-types'; // GET
+      
+  // Biometric Endpoints
+  static String biometricSlots = '$baseUrl/biometric/all'; // GET
+  static String biometricBook = '$baseUrl/biometric/bookings'; // POST
+  static String biometricMemberBookings(String appId) => 
+      '$baseUrl/biometric/bookings/membership/$appId'; // GET
+  static String biometricCancelBooking(String bookingId) => 
+      '$baseUrl/biometric/bookings/$bookingId'; // DELETE
 }

@@ -11,8 +11,11 @@ import 'package:nakoda_ji/utils/localStorage/local_storage.dart';
 import 'package:nakoda_ji/utils/syncfusion_license.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   
   // Register Syncfusion license
   SyncfusionLicense.register();
@@ -38,9 +41,13 @@ Future<void> main() async {
       
       // Also check if there's a saved registration step locally
       int savedStep = prefs.getInt(LocalStorage.memberRegistrationStep) ?? 0;
+
+      print('🔍 [Main] Token found. Role: $role');
+      print('🔍 [Main] hasApp: $hasApp, appId: $appId, savedStep: $savedStep');
       
-      if (hasApp && appId != null) {
+      if ((hasApp || appId != null) && appId != null) {
         // User already has a submitted application, show status page
+        print('🔍 [Main] Navigating to MemberStatusPage');
         initialWidget = MemberStatusPage(
           applicationId: appId,
           onEdit: () {
@@ -49,9 +56,11 @@ Future<void> main() async {
         );
       } else if (savedStep > 0) {
         // User is in the middle of a draft
+        print('🔍 [Main] Navigating to MemberRegisterPage (Draft)');
         initialWidget = const MemberRegisterPage();
       } else {
         // New user or no application yet
+        print('🔍 [Main] Navigating to MemberChooseForm');
         initialWidget = const MemberChooseForm();
       }
     }

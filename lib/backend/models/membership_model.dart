@@ -265,21 +265,21 @@ class MembershipModel {
 
     if (fathersName != null && fathersName!.isNotEmpty) {
       data['fathersName'] = fathersName;
-    }
 
-    if (applicantUserId != null && applicantUserId!.isNotEmpty) {
-      data['applicantUserId'] = applicantUserId;
-    }
+      if (applicantUserId != null && applicantUserId!.isNotEmpty) {
+        data['applicantUserId'] = applicantUserId;
+      }
 
-    // Specific address parts
-    if (permanentAddressLine1 != null && permanentAddressLine1!.isNotEmpty) {
-      data['permanentAddressLine1'] = permanentAddressLine1;
-    }
-    if (permanentAddressLine2 != null && permanentAddressLine2!.isNotEmpty) {
-      data['permanentAddressLine2'] = permanentAddressLine2;
-    }
-    if (permanentCity != null && permanentCity!.isNotEmpty) {
-      data['permanentCity'] = permanentCity;
+      // Specific address parts
+      if (permanentAddressLine1 != null && permanentAddressLine1!.isNotEmpty) {
+        data['permanentAddressLine1'] = permanentAddressLine1;
+      }
+      if (permanentAddressLine2 != null && permanentAddressLine2!.isNotEmpty) {
+        data['permanentAddressLine2'] = permanentAddressLine2;
+      }
+      if (permanentCity != null && permanentCity!.isNotEmpty) {
+        data['permanentCity'] = permanentCity;
+      }
     }
     if (permanentState != null && permanentState!.isNotEmpty) {
       data['permanentState'] = permanentState;

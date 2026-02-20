@@ -421,13 +421,24 @@ class MemberController {
   ) async {
     try {
       final headers = await _getHeaders();
+      final url = Uri.parse('${Urls.membershipApplications}/$id/corrections');
+      
+      print('\n🚀 [MEMBER CONTROLLER] saveMembershipCorrections');
+      print('📍 URL: $url');
+      print('📡 Payload: ${json.encode(payload)}');
+
       final response = await http.patch(
-        Uri.parse('${Urls.membershipApplications}/$id/corrections'),
+        url,
         headers: headers,
         body: json.encode(payload),
       );
+
+      print('📦 Status Code: ${response.statusCode}');
+      _printLongLog('📨 Response Body: ${response.body}');
+
       return BackendResponse.fromJson(json.decode(response.body));
     } catch (e) {
+      print('❌ Error in saveMembershipCorrections: $e');
       return BackendResponse(
         success: false,
         message: 'Error saving corrections: $e',
@@ -612,11 +623,149 @@ class MemberController {
       final headers = await _getHeaders();
       final url = Uri.parse(Urls.membershipUser);
       final response = await http.get(url, headers: headers);
-      return BackendResponse.fromJson(json.decode(response.body));
+      if (response.statusCode == 200) {
+        return BackendResponse.fromJson(json.decode(response.body));
+      } else {
+        return BackendResponse(
+          success: false, 
+          message: 'Error fetching user membership: ${response.body}'
+        );
+      }
     } catch (e) {
       return BackendResponse(
         success: false,
         message: 'Error fetching user membership: $e',
+      );
+    }
+  }
+
+  // --- BIOMETRIC ENDPOINTS ---
+
+  // 1. Fetch Available Slots
+  static Future<BackendResponse> fetchBiometricSlots({
+    int page = 1,
+    int limit = 10,
+    String filter = 'upcoming',
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final url = Uri.parse('${Urls.biometricSlots}?page=$page&limit=$limit&filter=$filter');
+      print('🔍 [MemberController] GET $url');
+      
+      final response = await http.get(url, headers: headers);
+      
+      if (response.statusCode == 200) {
+        return BackendResponse.fromJson(json.decode(response.body));
+      } else {
+         return BackendResponse(
+          success: false, 
+          message: 'Error fetching slots: ${response.body}'
+        );
+      }
+    } catch (e) {
+      return BackendResponse(
+        success: false,
+        message: 'Error fetching slots: $e',
+      );
+    }
+  }
+
+  // 2. Book Slot
+  static Future<BackendResponse> bookBiometricSlot({
+    required String scheduleId,
+    required int slotNumber,
+    required String membershipApplicationId,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final url = Uri.parse(Urls.biometricBook);
+      final body = json.encode({
+        'scheduleId': scheduleId,
+        'slotNumber': slotNumber,
+        'membershipApplicationId': membershipApplicationId,
+      });
+      
+      print('--------------------------------------------------');
+      print('🚀 [BOOKING REQUEST START]');
+      print('🔗 URL: $url');
+      print('📦 Payload: $body');
+      print('--------------------------------------------------');
+
+      final response = await http.post(url, headers: headers, body: body);
+
+      print('--------------------------------------------------');
+      print('📩 [BOOKING RESPONSE]');
+      print('✅ Status Code: ${response.statusCode}');
+      print('� Response Body: ${response.body}');
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        print('❌ API Error: ${response.reasonPhrase}');
+      }
+      print('--------------------------------------------------');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return BackendResponse.fromJson(json.decode(response.body));
+      } else {
+        print('❌ [MemberController] Booking Error: ${response.body}');
+        return BackendResponse(
+          success: false,
+          message: 'Booking failed: ${response.body}',
+        );
+      }
+    } catch (e) {
+      print('❌ [MemberController] Exception: $e');
+      return BackendResponse(
+        success: false,
+        message: 'Error booking slot: $e',
+      );
+    }
+  }
+
+  // 3. Fetch Member Bookings
+  static Future<BackendResponse> fetchMemberBookings(String appId) async {
+    try {
+      final headers = await _getHeaders();
+      final url = Uri.parse(Urls.biometricMemberBookings(appId));
+      print('🔍 [MemberController] GET $url');
+      
+      final response = await http.get(url, headers: headers);
+      
+      if (response.statusCode == 200) {
+        return BackendResponse.fromJson(json.decode(response.body));
+      } else {
+        return BackendResponse(
+          success: false, 
+          message: 'Error fetching bookings: ${response.body}'
+        );
+      }
+    } catch (e) {
+      return BackendResponse(
+        success: false,
+        message: 'Error fetching bookings: $e',
+      );
+    }
+  }
+
+  // 4. Cancel Booking
+  static Future<BackendResponse> cancelBiometricBooking(String bookingId) async {
+    try {
+      final headers = await _getHeaders();
+      final url = Uri.parse(Urls.biometricCancelBooking(bookingId));
+      print('🗑️ [MemberController] DELETE $url');
+      
+      final response = await http.delete(url, headers: headers);
+      
+      if (response.statusCode == 200) {
+        return BackendResponse.fromJson(json.decode(response.body));
+      } else {
+        return BackendResponse(
+          success: false, 
+          message: 'Error cancelling booking: ${response.body}'
+        );
+      }
+    } catch (e) {
+      return BackendResponse(
+        success: false,
+        message: 'Error cancelling booking: $e',
       );
     }
   }

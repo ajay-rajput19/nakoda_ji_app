@@ -110,6 +110,21 @@ class UserAuthController {
               appId = user['membershipApplicationId']?.toString();
 
               SharedPreferences prefs = await SharedPreferences.getInstance();
+              
+              // CRITICAL: Save user info for membership pre-filling
+              if (user['firstName'] != null) {
+                await prefs.setString('userFirstName', user['firstName'].toString());
+              }
+              if (user['lastName'] != null) {
+                await prefs.setString('userLastName', user['lastName'].toString());
+              }
+              if (user['email'] != null) {
+                await prefs.setString('userEmail', user['email'].toString());
+              }
+              if (user['phone'] != null) {
+                await prefs.setString('userPhone', user['phone'].toString());
+              }
+
               await prefs.setBool('hasMembershipApplication', hasApp);
               if (appId != null) {
                 await prefs.setString('memberRegistrationApplicationId', appId);
@@ -382,5 +397,26 @@ class UserAuthController {
     } catch (e) {
       return 'An error occurred while processing your request. Please try again.';
     }
+  }
+  static Future<void> logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    // Clear Auth Tokens
+    await prefs.remove('userAuthToken');
+    await prefs.remove('memberAuthToken');
+    await prefs.remove('userRole');
+    
+    // Clear Membership Registration Data
+    await prefs.remove('memberRegistrationStep');
+    await prefs.remove('memberRegistrationApplicationId');
+    await prefs.remove('memberRegistrationSelectedOption');
+    await prefs.remove('hasMembershipApplication');
+    
+    // Clear Pre-filled User Info
+    await prefs.remove('userFirstName');
+    await prefs.remove('userLastName');
+    await prefs.remove('userEmail');
+    await prefs.remove('userPhone');
+    
+    print('✅ [UserAuthController] All user data cleared on logout');
   }
 }

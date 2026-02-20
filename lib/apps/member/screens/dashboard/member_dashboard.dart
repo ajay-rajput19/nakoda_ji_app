@@ -76,7 +76,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
                         onActionTap: () {
                           AppNavigation(
                             context,
-                          ).push(BookingPage(bookings: staticData.bookings));
+                          ).push(const BookingPage());
                         },
                       ),
                       SizedBox(height: 15),

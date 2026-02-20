@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:nakoda_ji/apps/member/backend/member_controller.dart';
+import 'package:nakoda_ji/apps/member/screens/auth/member_status_page.dart';
 import 'package:nakoda_ji/backend/models/membership_model.dart';
 import 'package:nakoda_ji/components/buttons/button_with_icon.dart';
 import 'package:nakoda_ji/data/static/color_export.dart';
 import 'package:nakoda_ji/data/static/custom_fonts.dart';
+import 'package:nakoda_ji/utils/app_navigations/app_navigation.dart';
 import 'package:nakoda_ji/utils/localStorage/local_storage.dart';
 import 'package:nakoda_ji/utils/snackbar_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -115,10 +117,20 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
 
       if (response.isSuccess()) {
         // Clear saved registration data
+        // Clear saved registration steps but KEEP the application ID for status tracking
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.remove(LocalStorage.memberRegistrationStep);
-        await prefs.remove(LocalStorage.memberRegistrationApplicationId);
+        // await prefs.remove(LocalStorage.memberRegistrationApplicationId); // KEEP THIS!
         await prefs.remove(LocalStorage.memberRegistrationSelectedOption);
+
+        // Mark that user has a submitted application
+        await prefs.setBool('hasMembershipApplication', true);
+
+        print('✅ [MemberReviewPage] Submission Success!');
+        print('✅ [MemberReviewPage] hasMembershipApplication set to TRUE');
+        print(
+          '✅ [MemberReviewPage] App ID kept: ${prefs.getString(LocalStorage.memberRegistrationApplicationId)}',
+        );
 
         if (mounted) {
           // Show auto-dismissing success dialog
@@ -155,13 +167,27 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
             ),
           );
 
-          // Wait for 2.5 seconds then close dialog and refresh UI
-          await Future.delayed(Duration(milliseconds: 2500));
+          // Wait for 2.5 seconds then navigate to Status Page
+          await Future.delayed(const Duration(milliseconds: 2500));
           if (mounted) {
-            Navigator.of(context).pop(); // Close dialog
-            // Refresh the data to show SUBMITTED status and hide edit buttons/submit button
-            setState(() => _isSubmitting = false);
-            _fetchMembershipData();
+            Navigator.of(context).pop(); // Close Success Dialog
+
+            // Navigate to Status Page as membership is now SUBMITTED
+            AppNavigation(context).pushReplacement(
+              MemberStatusPage(
+                applicationId: widget.applicationId!,
+                onEdit: () {
+                  // This part is for going back to draft mode if needed
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const MemberReviewPage(isReviewMode: true),
+                    ),
+                  );
+                },
+              ),
+            );
           }
         }
       } else {
@@ -241,10 +267,7 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
             'Father\'s Name',
             _membershipData!.fathersName ?? 'Not provided',
           ),
-          _buildInfoRow(
-             'Area',
-             _membershipData!.area?.name ?? 'Not provided',
-          ),
+          _buildInfoRow('Area', _membershipData!.area?.name ?? 'Not provided'),
           _buildInfoRow(
             'Current Address',
             _membershipData!.currentAddress ??
@@ -430,28 +453,8 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (_isLoading || _isSubmitting) {
       return _buildSkeleton();
-    }
-
-    if (_isSubmitting) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 20),
-            Text(
-              "Submitting your application...",
-              style: TextStyle(
-                fontFamily: CustomFonts.poppins,
-                fontSize: 16,
-                color: CustomColors.clrBlack,
-              ),
-            ),
-          ],
-        ),
-      );
     }
 
     if (_membershipData == null) {
@@ -473,8 +476,12 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
       );
     }
 
-    final bool canEdit = widget.isReviewMode &&
-        (_membershipData?.status?.toUpperCase() == 'DRAFT' || _membershipData?.status?.toUpperCase() == 'REJECTED' || _membershipData?.status == null || _membershipData?.status?.isEmpty == true);
+    final bool canEdit =
+        widget.isReviewMode &&
+        (_membershipData?.status?.toUpperCase() == 'DRAFT' ||
+            _membershipData?.status?.toUpperCase() == 'REJECTED' ||
+            _membershipData?.status == null ||
+            _membershipData?.status?.isEmpty == true);
 
     // Wrap in SingleChildScrollView to avoid layout constraint issues
     return SingleChildScrollView(
@@ -493,32 +500,32 @@ class _MemberReviewPageState extends State<MemberReviewPage> {
               ),
             ),
           ),
-          if (!canEdit) ...[
-             SizedBox(height: 10),
-             Container(
-               padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-               decoration: BoxDecoration(
-                 color: _membershipData?.status?.toUpperCase() == 'APPROVED' ? Colors.green.shade50 : Colors.blue.shade50,
-                 borderRadius: BorderRadius.circular(8),
-                 border: Border.all(color: _membershipData?.status?.toUpperCase() == 'APPROVED' ? Colors.green : Colors.blue),
-               ),
-               child: Row(
-                 children: [
-                   Icon(Icons.info_outline, color: _membershipData?.status?.toUpperCase() == 'APPROVED' ? Colors.green : Colors.blue),
-                   SizedBox(width: 10),
-                   Expanded(
-                     child: Text(
-                       "Application Status: ${_membershipData?.status ?? 'Submitted'}",
-                       style: TextStyle(
-                         fontWeight: FontWeight.w600,
-                         color: _membershipData?.status?.toUpperCase() == 'APPROVED' ? Colors.green : Colors.blue,
-                       ),
-                     ),
-                   ),
-                 ],
-               ),
-             ),
-          ],
+          // if (!canEdit) ...[
+          //    SizedBox(height: 10),
+          //    Container(
+          //      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          //      decoration: BoxDecoration(
+          //        color: _membershipData?.status?.toUpperCase() == 'APPROVED' ? Colors.green.shade50 : Colors.blue.shade50,
+          //        borderRadius: BorderRadius.circular(8),
+          //        border: Border.all(color: _membershipData?.status?.toUpperCase() == 'APPROVED' ? Colors.green : Colors.blue),
+          //      ),
+          //      child: Row(
+          //        children: [
+          //          Icon(Icons.info_outline, color: _membershipData?.status?.toUpperCase() == 'APPROVED' ? Colors.green : Colors.blue),
+          //          SizedBox(width: 10),
+          //          Expanded(
+          //            child: Text(
+          //              "Application Status: ${_membershipData?.status ?? 'Submitted'}",
+          //              style: TextStyle(
+          //                fontWeight: FontWeight.w600,
+          //                color: _membershipData?.status?.toUpperCase() == 'APPROVED' ? Colors.green : Colors.blue,
+          //              ),
+          //            ),
+          //          ),
+          //        ],
+          //      ),
+          //    ),
+          // ],
           SizedBox(height: 20),
           // Personal Information Section Header with Edit Button
           Row(

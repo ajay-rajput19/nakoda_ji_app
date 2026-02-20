@@ -11,7 +11,8 @@ import 'package:nakoda_ji/data/static/custom_fonts.dart';
 import 'package:nakoda_ji/utils/app_navigations/app_navigation.dart';
 
 class MemberProfile extends StatefulWidget {
-  const MemberProfile({super.key});
+  final bool isReviewMode;
+  const MemberProfile({super.key, this.isReviewMode = false});
 
   @override
   State<MemberProfile> createState() => _MemberProfileState();
@@ -27,7 +28,7 @@ class _MemberProfileState extends State<MemberProfile> {
         key: _scaffoldKey,
         backgroundColor: CustomColors.clrbg,
         appBar: CommonAppBar(scaffoldKey: _scaffoldKey),
-        endDrawer: CustomDrawer(),
+        endDrawer: CustomDrawer(isReviewMode: widget.isReviewMode),
         body: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: SingleChildScrollView(

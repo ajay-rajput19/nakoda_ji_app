@@ -11,7 +11,8 @@ import 'package:nakoda_ji/utils/localStorage/local_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MemberRegisterPage extends StatefulWidget {
-  const MemberRegisterPage({super.key});
+  final bool isReviewMode; // Add this parameter
+  const MemberRegisterPage({super.key, this.isReviewMode = false});
 
   @override
   State<MemberRegisterPage> createState() => _MemberRegisterPageState();
@@ -43,13 +44,24 @@ class _MemberRegisterPageState extends State<MemberRegisterPage> {
       final response = await MemberController.fetchUserMembership();
       if (response.isSuccess() && response.data != null) {
         final status = (response.data['status'] ?? '').toString().toUpperCase();
-        _applicationStatus = status;
+        final id = response.data['id']?.toString() ?? response.data['_id']?.toString();
         
+        _applicationStatus = status;
+        _applicationId = id;
+        
+        // If explicitly in Review Mode (from sidebar) AND we have an ID, show Review/Status page
+        if (widget.isReviewMode && id != null) {
+           setState(() {
+            _currentStep = 2; // Jump to Review/Status page
+            _isLoading = false;
+          });
+          return;
+        }
+
+        // Standard Logic: If submitted, always show status page
         if (status != 'DRAFT' && status.isNotEmpty) {
           setState(() {
             _currentStep = 2; // Jump to Review/Status page
-            _applicationId =
-                response.data['id']?.toString() ?? response.data['_id']?.toString();
             _isLoading = false;
           });
           return;
@@ -62,9 +74,14 @@ class _MemberRegisterPageState extends State<MemberRegisterPage> {
       String? savedApplicationId =
           prefs.getString(LocalStorage.memberRegistrationApplicationId);
 
+      // If we found an ID from backend but local storage is empty, use backend ID
+      if (_applicationId == null && savedApplicationId != null) {
+        _applicationId = savedApplicationId;
+      }
+
       setState(() {
         _currentStep = savedStep;
-        _applicationId = savedApplicationId;
+        if (_applicationId == null) _applicationId = savedApplicationId;
         _isLoading = false;
       });
     } catch (e) {
@@ -123,6 +140,35 @@ class _MemberRegisterPageState extends State<MemberRegisterPage> {
       );
     }
 
+    // If explicitly in Review Mode and we have an ID, force show Status Page
+    if (widget.isReviewMode && _applicationId != null) {
+      return MemberStatusPage(
+        applicationId: _applicationId!,
+        onEdit: () {
+          // If editing is required, navigate to the form view (Draft mode)
+          // We push replacement to reset the view to the form
+          Navigator.pushReplacement(
+            context, 
+            MaterialPageRoute(builder: (context) => const MemberRegisterPage(isReviewMode: false))
+          );
+        },
+      );
+    }
+
+    // Normal flow: If application is submitted/approved, show the Status Page
+    if (_currentStep == 2 && _applicationId != null && _isAlreadySubmitted()) {
+      return MemberStatusPage(
+        applicationId: _applicationId!,
+        onEdit: () {
+          // Reset to Step 1 and allow editing
+          setState(() {
+            _currentStep = 0;
+            _applicationStatus = 'DRAFT';
+          });
+        },
+      );
+    }
+
     return SafeArea(
       child: Scaffold(
         body: Container(
@@ -178,22 +224,13 @@ class _MemberRegisterPageState extends State<MemberRegisterPage> {
                           },
                         ),
                       if (_currentStep == 2)
-                        _applicationId != null && _isAlreadySubmitted()
-                            ? MemberStatusPage(
-                                applicationId: _applicationId!,
-                                onEdit: () {
-                                  // Reset to Step 1 and allow editing
-                                  setState(() {
-                                    _currentStep = 0;
-                                    _applicationStatus = 'DRAFT'; 
-                                  });
-                                },
-                              )
-                            : MemberReviewPage(
-                                applicationId: _applicationId,
-                                isReviewMode: true,
-                                onEditStep: (step) => updateStep(step),
-                              )
+                        // Logic handled above for Submitted status.
+                        // Here we only show MemberReviewPage (Draft Review)
+                        MemberReviewPage(
+                          applicationId: _applicationId,
+                          isReviewMode: true,
+                          onEditStep: (step) => updateStep(step),
+                        )
                     ],
                   ),
                 ),

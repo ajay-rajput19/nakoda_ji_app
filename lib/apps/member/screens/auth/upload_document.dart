@@ -11,8 +11,8 @@ class UploadDocumentPage extends StatefulWidget {
   final String applicationId;
 
   const UploadDocumentPage({
-    super.key, 
-    this.onStepComplete, 
+    super.key,
+    this.onStepComplete,
     this.onBack,
     required this.applicationId,
   });
@@ -37,12 +37,14 @@ class _UploadDocumentPageState extends State<UploadDocumentPage> {
 
   Future<void> _initializeData() async {
     setState(() => _isLoading = true);
-    
+
     // 1. Fetch Doc Types
     final docTypesResponse = await MemberController.fetchAllDocumentTypes();
-    
+
     // 2. Fetch current application to see already uploaded docs
-    final appResponse = await MemberController.fetchMembershipById(widget.applicationId);
+    final appResponse = await MemberController.fetchMembershipById(
+      widget.applicationId,
+    );
 
     if (mounted) {
       setState(() {
@@ -53,21 +55,22 @@ class _UploadDocumentPageState extends State<UploadDocumentPage> {
         if (appResponse.isSuccess() && appResponse.data != null) {
           final applicationData = appResponse.data;
           final List<dynamic>? existingDocs = applicationData['documents'];
-          
+
           if (existingDocs != null) {
             for (var doc in existingDocs) {
-              final String? typeId = doc['documentTypeId']?.toString() ?? 
-                                    doc['typeId']?.toString();
+              final String? typeId =
+                  doc['documentTypeId']?.toString() ??
+                  doc['typeId']?.toString();
               if (typeId != null) {
                 _uploadedStatus[typeId] = true;
-                
+
                 // Extract filename
                 String? fileName = doc['fileName'] ?? doc['originalName'];
                 if (fileName == null && doc['url'] != null) {
                   fileName = doc['url'].toString().split('/').last;
                 }
                 if (fileName != null) {
-                   _uploadedFileNames[typeId] = fileName;
+                  _uploadedFileNames[typeId] = fileName;
                 }
               }
             }
@@ -139,11 +142,8 @@ class _UploadDocumentPageState extends State<UploadDocumentPage> {
 
   void _onNext() {
     // Show that the button was clicked
-    SnackbarHelper.show(
-      context,
-      message: 'Saving documents...',
-    );
-    
+    SnackbarHelper.show(context, message: 'Saving documents...');
+
     // Check required docs
     bool allRequiredUploaded = true;
     for (var doc in _documentTypes) {
@@ -166,10 +166,7 @@ class _UploadDocumentPageState extends State<UploadDocumentPage> {
     if (widget.onStepComplete != null) {
       widget.onStepComplete!();
       // Show success message
-      SnackbarHelper.show(
-        context,
-        message: 'Documents saved successfully!',
-      );
+      SnackbarHelper.show(context, message: 'Documents saved successfully!');
     }
   }
 
